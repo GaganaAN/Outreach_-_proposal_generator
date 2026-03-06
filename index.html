@@ -1,0 +1,2261 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ivoyant — Outreach Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@400;500&family=Geist:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        /* ─── Reset ─────────────────────────────────────────────── */
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        /* ─── Design Tokens ─────────────────────────────────────── */
+        :root {
+            --bg: #080b12;
+            --surface: #0e1420;
+            --raised: #141a28;
+            --border: #1e2740;
+            --border2: #2a3554;
+
+            --lime: #d4f74e;
+            --lime-dim: rgba(212, 247, 78, .12);
+            --blue: #4f8eff;
+            --blue-dim: rgba(79, 142, 255, .12);
+            --green: #2dd4a0;
+            --red: #ff6060;
+            --amber: #f0a030;
+
+            --text: #dde2f0;
+            --sub: #8892aa;
+            --dim: #4a5370;
+
+            --serif: 'Instrument Serif', Georgia, serif;
+            --mono: 'Geist Mono', 'Courier New', monospace;
+            --sans: 'Geist', system-ui, sans-serif;
+
+            --r-sm: 8px;
+            --r-md: 12px;
+            --r-lg: 18px;
+            --r-xl: 24px;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            overflow-x: hidden;
+        }
+
+        /* ─── Sidebar ────────────────────────────────────────────── */
+        .sidebar {
+            width: 230px;
+            min-height: 100vh;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 200;
+        }
+
+        .sb-brand {
+            padding: 28px 24px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sb-wordmark {
+            font-family: var(--serif);
+            font-size: 1.45rem;
+            color: var(--lime);
+            letter-spacing: -.01em;
+            line-height: 1;
+            font-style: italic;
+        }
+
+        .sb-tagline {
+            font-family: var(--mono);
+            font-size: .6rem;
+            text-transform: uppercase;
+            letter-spacing: .16em;
+            color: var(--dim);
+            margin-top: 5px;
+        }
+
+        .sb-section {
+            padding: 20px 14px 6px;
+        }
+
+        .sb-section-lbl {
+            font-family: var(--mono);
+            font-size: .58rem;
+            text-transform: uppercase;
+            letter-spacing: .16em;
+            color: var(--dim);
+            padding: 0 10px;
+            margin-bottom: 4px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 10px;
+            border-radius: var(--r-sm);
+            cursor: pointer;
+            color: var(--sub);
+            font-size: .875rem;
+            font-weight: 400;
+            transition: all .15s ease;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-family: var(--sans);
+            margin-bottom: 2px;
+        }
+
+        .nav-item .ni {
+            font-size: .95rem;
+            width: 22px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .nav-item:hover {
+            background: var(--raised);
+            color: var(--text);
+        }
+
+        .nav-item.active {
+            background: var(--lime-dim);
+            color: var(--lime);
+            font-weight: 500;
+        }
+
+        .sb-spacer {
+            flex: 1;
+        }
+
+        .sb-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border);
+            font-family: var(--mono);
+            font-size: .6rem;
+            color: var(--dim);
+            line-height: 1.7;
+        }
+
+        /* ─── App Shell ──────────────────────────────────────────── */
+        .shell {
+            margin-left: 230px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* ─── Topbar ─────────────────────────────────────────────── */
+        .topbar {
+            height: 60px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .topbar-title {
+            font-family: var(--serif);
+            font-size: 1.1rem;
+            font-style: italic;
+            color: var(--text);
+        }
+
+        .page-badge {
+            font-family: var(--mono);
+            font-size: .62rem;
+            padding: 3px 9px;
+            border-radius: 20px;
+            background: var(--lime-dim);
+            color: var(--lime);
+            border: 1px solid rgba(212, 247, 78, .2);
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .api-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-family: var(--mono);
+            font-size: .62rem;
+            background: rgba(45, 212, 160, .1);
+            color: var(--green);
+            border: 1px solid rgba(45, 212, 160, .2);
+        }
+
+        .pulse-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse 2s infinite;
+        }
+
+        .sync-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--mono);
+            font-size: .62rem;
+            padding: 5px 12px;
+            border-radius: 20px;
+        }
+
+        .sync-badge.ok {
+            background: var(--lime-dim);
+            color: var(--lime);
+            border: 1px solid rgba(212, 247, 78, .2);
+        }
+
+        .sync-badge.bad {
+            background: rgba(240, 160, 48, .1);
+            color: var(--amber);
+            border: 1px solid rgba(240, 160, 48, .25);
+        }
+
+        /* ─── Pages ──────────────────────────────────────────────── */
+        .page {
+            display: none;
+            flex: 1;
+        }
+
+        .page.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+
+        /* ══════════════════════════════════════════════════════════
+   EMAIL GENERATOR PAGE
+══════════════════════════════════════════════════════════ */
+        .email-page {
+            padding: 48px 40px;
+            flex: 1;
+            background:
+                radial-gradient(ellipse 60% 40% at 70% 0%, rgba(79, 142, 255, .07) 0%, transparent 60%),
+                radial-gradient(ellipse 40% 30% at 10% 80%, rgba(212, 247, 78, .05) 0%, transparent 50%),
+                var(--bg);
+        }
+
+        .email-hero {
+            margin-bottom: 40px;
+            animation: riseIn .7s cubic-bezier(.22, 1, .36, 1) both;
+        }
+
+        .email-hero h1 {
+            font-family: var(--serif);
+            font-size: 3rem;
+            font-style: italic;
+            line-height: 1.1;
+            letter-spacing: -.02em;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .email-hero h1 em {
+            font-style: normal;
+            color: var(--lime);
+        }
+
+        .email-hero p {
+            color: var(--sub);
+            font-size: .95rem;
+            font-weight: 300;
+            max-width: 480px;
+        }
+
+        /* Input card */
+        .input-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r-xl);
+            padding: 28px;
+            max-width: 860px;
+            margin-bottom: 28px;
+            animation: riseIn .7s cubic-bezier(.22, 1, .36, 1) .1s both;
+        }
+
+        .field-label {
+            display: block;
+            font-family: var(--mono);
+            font-size: .62rem;
+            text-transform: uppercase;
+            letter-spacing: .14em;
+            color: var(--sub);
+            margin-bottom: 10px;
+        }
+
+        .url-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .url-field {
+            flex: 1;
+            background: var(--raised);
+            border: 1px solid var(--border);
+            border-radius: var(--r-md);
+            padding: 14px 18px;
+            color: var(--text);
+            font-family: var(--sans);
+            font-size: .95rem;
+            outline: none;
+            transition: border-color .2s, box-shadow .2s;
+        }
+
+        .url-field:focus {
+            border-color: var(--lime);
+            box-shadow: 0 0 0 3px rgba(212, 247, 78, .08);
+        }
+
+        .url-field::placeholder {
+            color: var(--dim);
+        }
+
+        .gen-btn {
+            padding: 0 28px;
+            height: 52px;
+            background: var(--lime);
+            color: var(--bg);
+            border: none;
+            border-radius: var(--r-md);
+            font-family: var(--sans);
+            font-size: .9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .gen-btn:hover:not(:disabled) {
+            background: #c5eb3a;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(212, 247, 78, .2);
+        }
+
+        .gen-btn:disabled {
+            background: var(--dim);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .gen-spinner {
+            width: 17px;
+            height: 17px;
+            border: 2px solid rgba(8, 11, 18, .25);
+            border-top-color: var(--bg);
+            border-radius: 50%;
+            animation: spin .7s linear infinite;
+        }
+
+        /* Error */
+        .error-msg {
+            margin-top: 14px;
+            background: rgba(255, 96, 96, .08);
+            border: 1px solid rgba(255, 96, 96, .25);
+            border-left: 3px solid var(--red);
+            border-radius: var(--r-sm);
+            padding: 11px 16px;
+            font-size: .85rem;
+            color: #ff9090;
+            display: none;
+        }
+
+        .error-msg.show {
+            display: block;
+            animation: shake .35s ease;
+        }
+
+        /* Results */
+        .results {
+            display: none;
+            max-width: 860px;
+        }
+
+        .results.show {
+            display: block;
+            animation: riseIn .4s ease;
+        }
+
+        .result-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r-lg);
+            padding: 22px;
+            margin-bottom: 16px;
+        }
+
+        .rs-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .rs-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--blue) 0%, #8b5cf6 100%);
+            border-radius: var(--r-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .9rem;
+            flex-shrink: 0;
+        }
+
+        .rs-title {
+            font-weight: 600;
+            font-size: .95rem;
+            color: var(--text);
+        }
+
+        .subject-box {
+            background: var(--raised);
+            border-left: 3px solid var(--lime);
+            border-radius: var(--r-sm);
+            padding: 13px 16px;
+            font-weight: 600;
+            font-size: .95rem;
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        .body-box {
+            background: var(--raised);
+            border: 1px solid var(--border);
+            border-radius: var(--r-md);
+            padding: 22px;
+            line-height: 1.9;
+            color: #b8c0d8;
+            font-size: .92rem;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .body-box p {
+            margin-bottom: 1.1rem;
+        }
+
+        .body-box p:last-child {
+            margin-bottom: 0;
+        }
+
+        .body-box a {
+            color: var(--blue);
+        }
+
+        .copy-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            margin-top: 14px;
+            padding: 8px 18px;
+            background: rgba(45, 212, 160, .1);
+            color: var(--green);
+            border: 1px solid rgba(45, 212, 160, .22);
+            border-radius: var(--r-sm);
+            font-size: .82rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all .15s;
+            font-family: var(--sans);
+        }
+
+        .copy-btn:hover {
+            background: rgba(45, 212, 160, .18);
+        }
+
+        /* Job detail rows */
+        .jd-row {
+            display: flex;
+            padding: 9px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: .88rem;
+            align-items: flex-start;
+        }
+
+        .jd-row:last-child {
+            border-bottom: none;
+        }
+
+        .jd-key {
+            color: var(--sub);
+            width: 130px;
+            flex-shrink: 0;
+            font-size: .82rem;
+            padding-top: 1px;
+        }
+
+        .jd-val {
+            color: var(--text);
+            flex: 1;
+        }
+
+        /* Skill chips */
+        .skill-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .skill-chip {
+            padding: 3px 11px;
+            background: var(--blue-dim);
+            color: var(--blue);
+            border: 1px solid rgba(79, 142, 255, .22);
+            border-radius: 20px;
+            font-size: .75rem;
+            font-family: var(--mono);
+        }
+
+        /* Portfolio grid */
+        .port-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .port-card {
+            background: var(--raised);
+            border: 1px solid var(--border);
+            border-radius: var(--r-md);
+            padding: 14px;
+            transition: transform .2s, border-color .2s;
+        }
+
+        .port-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--border2);
+        }
+
+        .port-skill {
+            font-weight: 600;
+            color: var(--lime);
+            font-size: .9rem;
+            margin-bottom: 4px;
+        }
+
+        .port-score {
+            display: inline-block;
+            padding: 2px 8px;
+            background: rgba(45, 212, 160, .1);
+            color: var(--green);
+            border-radius: 10px;
+            font-size: .7rem;
+            font-family: var(--mono);
+            margin-bottom: 8px;
+        }
+
+        .port-projects {
+            color: var(--sub);
+            font-size: .78rem;
+            line-height: 1.55;
+            margin-bottom: 8px;
+        }
+
+        .port-link {
+            color: var(--blue);
+            font-size: .75rem;
+            font-family: var(--mono);
+            text-decoration: none;
+        }
+
+        .port-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Stats strip */
+        .stats-strip {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .stat-pill {
+            flex: 1;
+            min-width: 120px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r-md);
+            padding: 16px;
+            text-align: center;
+        }
+
+        .stat-val {
+            font-family: var(--serif);
+            font-size: 2rem;
+            font-style: italic;
+            color: var(--lime);
+            line-height: 1;
+        }
+
+        .stat-lbl {
+            font-family: var(--mono);
+            font-size: .58rem;
+            text-transform: uppercase;
+            letter-spacing: .12em;
+            color: var(--sub);
+            margin-top: 4px;
+        }
+
+
+        /* ══════════════════════════════════════════════════════════
+   PORTFOLIO ADMIN PAGE
+══════════════════════════════════════════════════════════ */
+        .admin-page {
+            padding: 32px 40px;
+            flex: 1;
+        }
+
+        /* Stats cards */
+        .admin-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            margin-bottom: 28px;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r-lg);
+            padding: 20px 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+        }
+
+        .stat-card.c-lime::before {
+            background: var(--lime);
+        }
+
+        .stat-card.c-blue::before {
+            background: var(--blue);
+        }
+
+        .stat-card.c-amber::before {
+            background: var(--amber);
+        }
+
+        .sc-label {
+            font-family: var(--mono);
+            font-size: .6rem;
+            text-transform: uppercase;
+            letter-spacing: .12em;
+            color: var(--sub);
+            margin-bottom: 10px;
+        }
+
+        .sc-val {
+            font-family: var(--serif);
+            font-size: 2.4rem;
+            font-style: italic;
+            line-height: 1;
+        }
+
+        .sc-val.lime {
+            color: var(--lime);
+        }
+
+        .sc-val.blue {
+            color: var(--blue);
+        }
+
+        .sc-note {
+            font-size: .75rem;
+            color: var(--sub);
+            margin-top: 8px;
+        }
+
+        /* Toolbar */
+        .admin-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r-sm);
+            padding: 0 14px;
+            height: 40px;
+            width: 260px;
+            transition: border-color .15s;
+        }
+
+        .search-box:focus-within {
+            border-color: var(--border2);
+        }
+
+        .search-box input {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-family: var(--sans);
+            font-size: .85rem;
+            width: 100%;
+            outline: none;
+        }
+
+        .search-box input::placeholder {
+            color: var(--dim);
+        }
+
+        /* Table */
+        .table-wrap {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r-lg);
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead tr {
+            border-bottom: 1px solid var(--border);
+        }
+
+        thead th {
+            font-family: var(--mono);
+            font-size: .6rem;
+            text-transform: uppercase;
+            letter-spacing: .12em;
+            color: var(--dim);
+            padding: 13px 20px;
+            text-align: left;
+            font-weight: 500;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background .1s;
+        }
+
+        tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        tbody tr:hover {
+            background: rgba(255, 255, 255, .015);
+        }
+
+        tbody td {
+            padding: 13px 20px;
+            font-size: .84rem;
+            vertical-align: middle;
+        }
+
+        .skill-badge {
+            display: inline-block;
+            background: var(--lime-dim);
+            color: var(--lime);
+            border: 1px solid rgba(212, 247, 78, .22);
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-family: var(--mono);
+            font-size: .7rem;
+            font-weight: 500;
+        }
+
+        .tbl-link {
+            color: var(--blue);
+            font-family: var(--mono);
+            font-size: .72rem;
+            text-decoration: none;
+            display: inline-block;
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+
+        .tbl-link:hover {
+            text-decoration: underline;
+        }
+
+        .tbl-muted {
+            color: var(--sub);
+            font-size: .78rem;
+            max-width: 190px;
+        }
+
+        .row-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        /* ─── Buttons ────────────────────────────────────────────── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0 16px;
+            height: 38px;
+            border-radius: var(--r-sm);
+            font-family: var(--sans);
+            font-size: .82rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all .15s;
+        }
+
+        .btn-lime {
+            background: var(--lime);
+            color: var(--bg);
+        }
+
+        .btn-lime:hover {
+            background: #c5eb3a;
+            transform: translateY(-1px);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-ghost:hover {
+            background: var(--raised);
+        }
+
+        .btn-danger {
+            background: transparent;
+            color: var(--red);
+            border: 1px solid rgba(255, 96, 96, .28);
+        }
+
+        .btn-danger:hover {
+            background: rgba(255, 96, 96, .08);
+        }
+
+        .btn-amber {
+            background: transparent;
+            color: var(--amber);
+            border: 1px solid rgba(240, 160, 48, .28);
+        }
+
+        .btn-amber:hover {
+            background: rgba(240, 160, 48, .08);
+        }
+
+        .btn-sm {
+            height: 30px;
+            padding: 0 12px;
+            font-size: .75rem;
+        }
+
+
+        /* ─── Modal ──────────────────────────────────────────────── */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .75);
+            backdrop-filter: blur(6px);
+            z-index: 400;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .overlay.open {
+            display: flex;
+            animation: fadeIn .15s ease;
+        }
+
+        .modal {
+            background: var(--surface);
+            border: 1px solid var(--border2);
+            border-radius: var(--r-xl);
+            width: 540px;
+            max-width: 95vw;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp .22s cubic-bezier(.22, 1, .36, 1);
+        }
+
+        .modal-header {
+            padding: 24px 28px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .modal-header h3 {
+            font-family: var(--serif);
+            font-size: 1.25rem;
+            font-style: italic;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--sub);
+            cursor: pointer;
+            font-size: 1.5rem;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: var(--text);
+        }
+
+        .modal-body {
+            padding: 20px 28px;
+        }
+
+        .modal-footer {
+            padding: 0 28px 24px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        /* Form fields */
+        .fg {
+            margin-bottom: 16px;
+        }
+
+        .fl {
+            display: block;
+            font-family: var(--mono);
+            font-size: .6rem;
+            text-transform: uppercase;
+            letter-spacing: .12em;
+            color: var(--sub);
+            margin-bottom: 7px;
+        }
+
+        .fi,
+        .fta {
+            width: 100%;
+            background: var(--raised);
+            border: 1px solid var(--border);
+            border-radius: var(--r-sm);
+            padding: 10px 14px;
+            color: var(--text);
+            font-family: var(--sans);
+            font-size: .88rem;
+            outline: none;
+            transition: border-color .15s;
+        }
+
+        .fi:focus,
+        .fta:focus {
+            border-color: var(--lime);
+            box-shadow: 0 0 0 2px rgba(212, 247, 78, .08);
+        }
+
+        .fi::placeholder,
+        .fta::placeholder {
+            color: var(--dim);
+        }
+
+        .fta {
+            resize: vertical;
+            min-height: 76px;
+            line-height: 1.65;
+        }
+
+        .fhint {
+            margin-top: 4px;
+            font-size: .72rem;
+            color: var(--dim);
+        }
+
+        .confirm-text {
+            font-size: .9rem;
+            color: var(--sub);
+            line-height: 1.7;
+        }
+
+        .confirm-skill {
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        /* ─── Empty State ────────────────────────────────────────── */
+        .empty-state {
+            text-align: center;
+            padding: 56px 20px;
+            color: var(--sub);
+        }
+
+        .empty-state .ei {
+            font-size: 2.8rem;
+            margin-bottom: 12px;
+            opacity: .3;
+        }
+
+        .empty-state p {
+            font-size: .88rem;
+        }
+
+        /* ─── Toast ──────────────────────────────────────────────── */
+        .toast-wrap {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 600;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .toast {
+            background: var(--surface);
+            border: 1px solid var(--border2);
+            border-radius: var(--r-md);
+            padding: 12px 18px;
+            font-size: .83rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 250px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, .5);
+            animation: toastIn .22s ease;
+        }
+
+        .toast.success {
+            border-left: 3px solid var(--green);
+        }
+
+        .toast.error {
+            border-left: 3px solid var(--red);
+        }
+
+        .toast.info {
+            border-left: 3px solid var(--blue);
+        }
+
+        /* ─── Mini spinner ───────────────────────────────────────── */
+        .mspin {
+            display: inline-block;
+            width: 13px;
+            height: 13px;
+            border: 2px solid rgba(8, 11, 18, .25);
+            border-top-color: var(--bg);
+            border-radius: 50%;
+            animation: spin .7s linear infinite;
+        }
+
+        /* ─── Keyframes ──────────────────────────────────────────── */
+        @keyframes riseIn {
+            from {
+                opacity: 0;
+                transform: translateY(16px)
+            }
+
+            to {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0
+            }
+
+            to {
+                opacity: 1
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(22px)
+            }
+
+            to {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateX(22px)
+            }
+
+            to {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: .3
+            }
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0)
+            }
+
+            30% {
+                transform: translateX(-6px)
+            }
+
+            70% {
+                transform: translateX(6px)
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ══ SIDEBAR ══════════════════════════════════════════════ -->
+    <nav class="sidebar">
+        <div class="sb-brand">
+            <div class="sb-wordmark">Ivoyant</div>
+            <div class="sb-tagline">Outreach Platform</div>
+        </div>
+
+        <div class="sb-section">
+            <div class="sb-section-lbl">Tools</div>
+            <button class="nav-item active" id="nav-email" onclick="showPage('email')">
+                <span class="ni">✉️</span> Email Generator
+            </button>
+        </div>
+
+        <button class="nav-item" id="nav-history" onclick="showPage('history')">
+            <span class="ni">📊</span> Email History
+        </button>
+
+        <div class="sb-section">
+            <div class="sb-section-lbl">Admin</div>
+            <button class="nav-item" id="nav-portfolio" onclick="showPage('portfolio')">
+                <span class="ni">📦</span> Portfolio Manager
+            </button>
+        </div>
+
+        <div class="sb-spacer"></div>
+        <div class="sb-footer">
+            v1.0.0<br>Ivoyant Systems Pvt Ltd
+        </div>
+    </nav>
+
+    <!-- ══ SHELL ════════════════════════════════════════════════ -->
+    <div class="shell">
+
+        <!-- Topbar -->
+        <div class="topbar">
+            <div class="topbar-left">
+                <div class="topbar-title" id="topbar-title">Cold Email Generator</div>
+                <span class="page-badge" id="page-badge">Generator</span>
+            </div>
+            <div class="topbar-right">
+                <div class="api-status"><span class="pulse-dot"></span> API Ready</div>
+                <span class="sync-badge ok" id="sync-badge" style="display:none">
+                    <span class="pulse-dot"></span> Synced
+                </span>
+                <button class="btn btn-lime btn-sm" id="add-portfolio-btn" style="display:none"
+                    onclick="openAddModal()">
+                    + Add Entry
+                </button>
+            </div>
+        </div>
+
+        <!-- ════ EMAIL PAGE ════════════════════════════════════ -->
+        <div class="page active" id="page-email">
+            <div class="email-page">
+
+                <div class="email-hero">
+                    <h1>Cold Email <em>Generator</em></h1>
+                    <p>Paste a job posting URL and get a personalised outreach email in seconds, powered by AI and your
+                        portfolio.</p>
+                </div>
+
+                <div class="input-card">
+                    <label class="field-label">Job Posting URL</label>
+                    <div class="url-row">
+                        <input class="url-field" id="jobUrl" type="url"
+                            placeholder="https://jobs.company.com/software-engineer-role">
+                        <button class="gen-btn" id="gen-btn" onclick="generateEmail()">
+                            <span id="gen-btn-text">✨ Generate</span>
+                        </button>
+                    </div>
+                    <div class="error-msg" id="error-msg"></div>
+                </div>
+
+                <!-- Results -->
+                <div class="results" id="results">
+
+                    <!-- Subject -->
+                    <div class="result-section">
+                        <div class="rs-header">
+                            <div class="rs-icon">📧</div>
+                            <div class="rs-title">Email Subject</div>
+                        </div>
+                        <div class="subject-box" id="emailSubject"></div>
+                    </div>
+
+                    <!-- Body -->
+                    <div class="result-section">
+                        <div class="rs-header">
+                            <div class="rs-icon">📝</div>
+                            <div class="rs-title">Email Body</div>
+                        </div>
+                        <div class="body-box" id="emailBody"></div>
+                        <button class="copy-btn" onclick="copyEmail()">📋 Copy Email</button>
+                    </div>
+
+                    <!-- Job Details -->
+                    <div class="result-section">
+                        <div class="rs-header">
+                            <div class="rs-icon">💼</div>
+                            <div class="rs-title">Job Details</div>
+                        </div>
+                        <div class="jd-row">
+                            <div class="jd-key">Role</div>
+                            <div class="jd-val" id="jobRole"></div>
+                        </div>
+                        <div class="jd-row">
+                            <div class="jd-key">Skills</div>
+                            <div class="jd-val">
+                                <div class="skill-chips" id="skillsList"></div>
+                            </div>
+                        </div>
+                        <div class="jd-row">
+                            <div class="jd-key">Description</div>
+                            <div class="jd-val" id="jobDescription"
+                                style="color:var(--sub);font-size:.84rem;line-height:1.6"></div>
+                        </div>
+                        <div class="jd-row" id="experienceRow" style="display:none">
+                            <div class="jd-key">Experience</div>
+                            <div class="jd-val" id="jobExperience"></div>
+                        </div>
+                        <div class="jd-row" id="locationRow" style="display:none">
+                            <div class="jd-key">Location</div>
+                            <div class="jd-val" id="jobLocation"></div>
+                        </div>
+                    </div>
+
+                    <!-- Portfolio Matches -->
+                    <div class="result-section" id="portfolioSection" style="display:none">
+                        <div class="rs-header">
+                            <div class="rs-icon">🎯</div>
+                            <div class="rs-title">Portfolio Matches</div>
+                        </div>
+                        <div class="port-grid" id="portfolioMatches"></div>
+                    </div>
+
+                    <!-- Stats -->
+                    <div class="stats-strip">
+                        <div class="stat-pill">
+                            <div class="stat-val" id="matchCount">0</div>
+                            <div class="stat-lbl">Matches</div>
+                        </div>
+                        <div class="stat-pill">
+                            <div class="stat-val" id="processingTime">—</div>
+                            <div class="stat-lbl">Processing</div>
+                        </div>
+                        <div class="stat-pill">
+                            <div class="stat-val" id="skillCount">0</div>
+                            <div class="stat-lbl">Skills Found</div>
+                        </div>
+                    </div>
+
+                </div><!-- /results -->
+
+            </div><!-- /email-page -->
+        </div>
+
+
+        <!-- ════ EMAIL HISTORY PAGE ════════════════════════════════ -->
+        <div class="page" id="page-history">
+            <div class="admin-page">
+
+                <!-- Stats cards -->
+                <div class="admin-stats">
+                    <div class="stat-card c-lime">
+                        <div class="sc-label">Total Generated</div>
+                        <div class="sc-val lime" id="hist-total">—</div>
+                        <div class="sc-note">All emails created</div>
+                    </div>
+                    <div class="stat-card c-blue">
+                        <div class="sc-label">Sent</div>
+                        <div class="sc-val blue" id="hist-sent">—</div>
+                        <div class="sc-note">Marked as sent</div>
+                    </div>
+                    <div class="stat-card c-amber">
+                        <div class="sc-label">Response Rate</div>
+                        <div class="sc-val" id="hist-rate" style="font-size:1.8rem;padding-top:4px">—</div>
+                        <div class="sc-note">Replied / Sent</div>
+                    </div>
+                </div>
+
+                <!-- Toolbar -->
+                <div class="admin-toolbar">
+                    <div class="search-box">
+                        <span style="color:var(--dim);font-size:.9rem">⌕</span>
+                        <input type="text" id="hist-search" placeholder="Search company, role…"
+                            oninput="filterEmails()">
+                    </div>
+                    <div style="display:flex;gap:10px;align-items:center">
+                        <select id="hist-status-filter" onchange="filterEmails()"
+                            style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:6px 12px;color:var(--text);font-size:.82rem;font-family:var(--sans)">
+                            <option value="">All Status</option>
+                            <option value="draft">Draft</option>
+                            <option value="sent">Sent</option>
+                            <option value="responded">Responded</option>
+                            <option value="interested">Interested</option>
+                            <option value="not_interested">Not Interested</option>
+                        </select>
+                        <span id="hist-count" style="font-size:.78rem;color:var(--sub)"></span>
+                        <button class="btn btn-amber btn-sm" onclick="exportEmails()">📥 Export CSV</button>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Company</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th style="text-align:right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="hist-tbody">
+                            <tr>
+                                <td colspan="5">
+                                    <div class="empty-state">
+                                        <div class="ei">⏳</div>
+                                        <p>Loading…</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ════ PORTFOLIO PAGE ════════════════════════════════ -->
+        <div class="page" id="page-portfolio">
+            <div class="admin-page">
+
+                <!-- Stat cards -->
+                <div class="admin-stats">
+                    <div class="stat-card c-lime">
+                        <div class="sc-label">DB Portfolios</div>
+                        <div class="sc-val lime" id="sc-db">—</div>
+                        <div class="sc-note">Stored in database</div>
+                    </div>
+                    <div class="stat-card c-blue">
+                        <div class="sc-label">Vector Store</div>
+                        <div class="sc-val blue" id="sc-vs">—</div>
+                        <div class="sc-note">Indexed in ChromaDB</div>
+                    </div>
+                    <div class="stat-card c-amber">
+                        <div class="sc-label">Sync Status</div>
+                        <div class="sc-val" id="sc-sync" style="font-size:1.3rem;padding-top:8px">—</div>
+                        <div class="sc-note">DB ↔ Vector Store</div>
+                    </div>
+                </div>
+
+                <!-- Toolbar -->
+                <div class="admin-toolbar">
+                    <div class="search-box">
+                        <span style="color:var(--dim);font-size:.9rem">⌕</span>
+                        <input type="text" id="admin-search" placeholder="Search skill, project, description…"
+                            oninput="filterPortfolios()">
+                    </div>
+                    <div style="display:flex;gap:10px;align-items:center">
+                        <span id="portfolio-count" style="font-size:.78rem;color:var(--sub)"></span>
+                        <button class="btn btn-amber btn-sm" onclick="syncVectorStore()">
+                            🔄 Sync Vector Store
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Skill</th>
+                                <th>Portfolio Link</th>
+                                <th>Projects</th>
+                                <th>Description</th>
+                                <th style="text-align:right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="portfolio-tbody">
+                            <tr>
+                                <td colspan="5">
+                                    <div class="empty-state">
+                                        <div class="ei">⏳</div>
+                                        <p>Loading…</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div><!-- /admin-page -->
+        </div>
+
+    </div><!-- /shell -->
+
+
+    <!-- ══ ADD / EDIT MODAL ═══════════════════════════════════ -->
+    <div class="overlay" id="form-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-title">Add Portfolio Entry</h3>
+                <button class="modal-close" onclick="closeModal('form-overlay')">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-id">
+                <div class="fg">
+                    <label class="fl">Skill *</label>
+                    <input class="fi" id="f-skill" placeholder="e.g. Python, React, AWS">
+                    <div class="fhint">Used for semantic matching against job postings.</div>
+                </div>
+                <div class="fg">
+                    <label class="fl">Portfolio Link *</label>
+                    <input class="fi" id="f-link" type="url" placeholder="https://ivoyant.com/portfolio/python">
+                </div>
+                <div class="fg">
+                    <label class="fl">Projects * — one per line</label>
+                    <textarea class="fta" id="f-projects" rows="4"
+                        placeholder="ML Pipeline&#10;Data Processing&#10;Analytics Dashboard"></textarea>
+                </div>
+                <div class="fg">
+                    <label class="fl">Description</label>
+                    <textarea class="fta" id="f-desc" rows="2"
+                        placeholder="Brief description of expertise in this skill."></textarea>
+                </div>
+                <div class="fg">
+                    <label class="fl">Image URL <span style="color:var(--dim)">(optional)</span></label>
+                    <input class="fi" id="f-image" type="url" placeholder="https://…/thumbnail.png">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('form-overlay')">Cancel</button>
+                <button class="btn btn-lime" id="save-btn" onclick="savePortfolio()">Save Entry</button>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- ══ EMAIL DETAIL MODAL ════════════════════════════════ -->
+    <div class="overlay" id="email-detail-overlay">
+        <div class="modal" style="width:680px;max-height:85vh">
+            <div class="modal-header">
+                <h3 id="email-detail-title">Email Details</h3>
+                <button class="modal-close" onclick="closeModal('email-detail-overlay')">×</button>
+            </div>
+            <div class="modal-body" style="max-height:calc(85vh - 180px);overflow-y:auto">
+
+                <input type="hidden" id="email-detail-id">
+
+                <!-- Subject -->
+                <div style="margin-bottom:20px">
+                    <div
+                        style="font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--sub);margin-bottom:8px">
+                        📧 Subject</div>
+                    <div id="email-detail-subject"
+                        style="background:var(--raised);border-left:3px solid var(--lime);border-radius:var(--r-sm);padding:12px 16px;font-weight:600">
+                    </div>
+                </div>
+
+                <!-- Body -->
+                <div style="margin-bottom:20px">
+                    <div
+                        style="font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--sub);margin-bottom:8px">
+                        📝 Email Body</div>
+                    <div id="email-detail-body"
+                        style="background:var(--raised);border:1px solid var(--border);border-radius:var(--r-md);padding:18px;line-height:1.85;color:#b8c0d8;font-size:.88rem;max-height:300px;overflow-y:auto">
+                    </div>
+                </div>
+
+                <!-- Job Info -->
+                <div style="margin-bottom:20px">
+                    <div
+                        style="font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--sub);margin-bottom:8px">
+                        💼 Job Details</div>
+                    <div
+                        style="background:var(--raised);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px">
+                        <div style="margin-bottom:8px"><span style="color:var(--sub);font-size:.82rem">Company:</span>
+                            <span id="email-detail-company"></span>
+                        </div>
+                        <div style="margin-bottom:8px"><span style="color:var(--sub);font-size:.82rem">URL:</span> <a
+                                id="email-detail-url" href="#" target="_blank"
+                                style="color:var(--blue);font-size:.8rem;word-break:break-all"></a></div>
+                        <div><span style="color:var(--sub);font-size:.82rem">Skills:</span> <span
+                                id="email-detail-skills" style="font-size:.82rem"></span></div>
+                    </div>
+                </div>
+
+                <!-- Tracking -->
+                <div style="margin-bottom:20px">
+                    <div
+                        style="font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--sub);margin-bottom:8px">
+                        📊 Tracking</div>
+                    <div
+                        style="background:var(--raised);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px">
+                        <div style="margin-bottom:12px">
+                            <label
+                                style="display:block;font-size:.82rem;color:var(--sub);margin-bottom:6px">Status</label>
+                            <select id="email-detail-status"
+                                style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 12px;color:var(--text);font-size:.88rem;font-family:var(--sans)">
+                                <option value="draft">○ Draft</option>
+                                <option value="sent">● Sent</option>
+                                <option value="responded">● Responded</option>
+                                <option value="interested">✓ Interested</option>
+                                <option value="not_interested">✗ Not Interested</option>
+                            </select>
+                        </div>
+                        <div style="font-size:.78rem;color:var(--sub)">
+                            <div>Generated: <span id="email-detail-generated"></span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div>
+                    <div
+                        style="font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--sub);margin-bottom:8px">
+                        📝 Notes</div>
+                    <textarea id="email-detail-notes" placeholder="Add notes about this email…"
+                        style="width:100%;background:var(--raised);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;color:var(--text);font-size:.88rem;font-family:var(--sans);line-height:1.6;min-height:80px;resize:vertical"></textarea>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger btn-sm" onclick="deleteEmail()">🗑️ Delete</button>
+                <div style="flex:1"></div>
+                <button class="btn btn-ghost" onclick="closeModal('email-detail-overlay')">Cancel</button>
+                <button class="btn btn-lime" id="save-email-btn" onclick="saveEmailDetails()">💾 Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ CONFIRM DELETE MODAL ════════════════════════════════ -->
+    <div class="overlay" id="confirm-overlay">
+        <div class="modal" style="width:410px">
+            <div class="modal-header">
+                <h3 style="color:var(--red)">Delete Entry</h3>
+                <button class="modal-close" onclick="closeModal('confirm-overlay')">×</button>
+            </div>
+            <div class="modal-body">
+                <p class="confirm-text">
+                    Are you sure you want to delete
+                    <span class="confirm-skill" id="confirm-skill-name"></span>?
+                    <br><br>
+                    It will be removed from the database.
+                    Click <strong>Sync Vector Store</strong> afterwards to update email matching.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('confirm-overlay')">Cancel</button>
+                <button class="btn btn-danger" id="confirm-del-btn" onclick="confirmDelete()">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ TOASTS ════════════════════════════════════════════ -->
+    <div class="toast-wrap" id="toast-wrap"></div>
+
+
+    <!-- ══ SCRIPTS ════════════════════════════════════════════ -->
+    <script>
+        /* ─── State ──────────────────────────────────────────────── */
+        const ADMIN = '/api/admin';
+        let CREDS = btoa('admin:ivoyant@admin');
+        let allRows = [];
+        let deleteId = null;
+
+        /* ─── Navigation ─────────────────────────────────────────── */
+        function showPage(name) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('page-' + name).classList.add('active');
+            document.getElementById('nav-' + name).classList.add('active');
+
+            const labels = { email: ['Cold Email Generator', 'Generator'], history: ['Email History', 'Tracking'], portfolio: ['Portfolio Manager', 'Admin'] };
+            document.getElementById('topbar-title').textContent = labels[name][0];
+            document.getElementById('page-badge').textContent = labels[name][1];
+
+            const isAdmin = name === 'portfolio' || name === 'history';
+            document.getElementById('sync-badge').style.display = isAdmin ? 'inline-flex' : 'none';
+            document.getElementById('add-portfolio-btn').style.display = isAdmin ? 'inline-flex' : 'none';
+
+            if (name === 'portfolio') { loadAdminStats(); loadPortfolios(); }
+            if (name === 'history') { loadEmailStats(); loadEmails(); }
+        }
+
+        /* ─── Admin API helper ───────────────────────────────────── */
+        async function adminFetch(method, path, body) {
+            const opts = {
+                method,
+                headers: { 'Authorization': 'Basic ' + CREDS, 'Content-Type': 'application/json' }
+            };
+            if (body) opts.body = JSON.stringify(body);
+            const res = await fetch(ADMIN + path, opts);
+
+            if (res.status === 401) {
+                const u = prompt('Admin username:', 'admin') || 'admin';
+                const p = prompt('Admin password:', '') || '';
+                CREDS = btoa(u + ':' + p);
+                return adminFetch(method, path, body);
+            }
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({ detail: res.statusText }));
+                throw new Error(err.detail || 'Request failed');
+            }
+
+            if (res.status === 204) return null;
+            return res.json();
+        }
+
+        /* ─── Admin Stats ────────────────────────────────────────── */
+        async function loadAdminStats() {
+            try {
+                const d = await adminFetch('GET', '/stats');
+                document.getElementById('sc-db').textContent = d.db_portfolio_count;
+                document.getElementById('sc-vs').textContent = d.vector_store_count;
+
+                const ok = d.in_sync;
+                document.getElementById('sc-sync').textContent = ok ? '✓ Synced' : '⚠ Out of sync';
+                document.getElementById('sc-sync').style.color = ok ? 'var(--lime)' : 'var(--amber)';
+
+                const badge = document.getElementById('sync-badge');
+                badge.className = 'sync-badge ' + (ok ? 'ok' : 'bad');
+                badge.innerHTML = `<span class="pulse-dot"></span> ${ok ? 'Synced' : 'Out of sync'}`;
+            } catch (e) { console.error('Stats error', e); }
+        }
+
+        /* ─── Portfolio list ─────────────────────────────────────── */
+        async function loadPortfolios() {
+            const tbody = document.getElementById('portfolio-tbody');
+            tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="ei">⏳</div><p>Loading…</p></div></td></tr>`;
+
+            try {
+                allRows = await adminFetch('GET', '/portfolios');
+                renderTable(allRows);
+            } catch (e) {
+                toast('Failed to load portfolios: ' + e.message, 'error');
+                tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="ei">⚠️</div><p>${e.message}</p></div></td></tr>`;
+            }
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('portfolio-tbody');
+            document.getElementById('portfolio-count').textContent = data.length + ' entries';
+
+            if (!data.length) {
+                tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="ei">📭</div><p>No entries yet — click "+ Add Entry" to get started.</p></div></td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = data.map(row => `
+    <tr>
+      <td><span class="skill-badge">${esc(row.skill)}</span></td>
+      <td><a href="${esc(row.portfolio_link)}" target="_blank" class="tbl-link">${esc(row.portfolio_link)}</a></td>
+      <td class="tbl-muted">${esc((row.projects || []).join(', '))}</td>
+      <td class="tbl-muted">${esc(row.description || '—')}</td>
+      <td>
+        <div class="row-actions">
+          <button class="btn btn-ghost btn-sm" onclick="openEditModal(${row.id})">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="openDeleteConfirm(${row.id}, '${esc(row.skill)}')">Delete</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+        }
+
+        function filterPortfolios() {
+            const q = document.getElementById('admin-search').value.toLowerCase();
+            if (!q) { renderTable(allRows); return; }
+            renderTable(allRows.filter(r =>
+                r.skill.toLowerCase().includes(q) ||
+                (r.projects || []).join(' ').toLowerCase().includes(q) ||
+                (r.description || '').toLowerCase().includes(q)
+            ));
+        }
+
+        /* ─── Add / Edit ─────────────────────────────────────────── */
+        function openAddModal() {
+            clearForm();
+            document.getElementById('modal-title').textContent = 'Add Portfolio Entry';
+            document.getElementById('save-btn').textContent = 'Save Entry';
+            document.getElementById('edit-id').value = '';
+            openModal('form-overlay');
+        }
+
+        async function openEditModal(id) {
+            clearForm();
+            document.getElementById('modal-title').textContent = 'Edit Portfolio Entry';
+            document.getElementById('save-btn').textContent = 'Update Entry';
+            try {
+                const row = await adminFetch('GET', '/portfolios/' + id);
+                document.getElementById('edit-id').value = row.id;
+                document.getElementById('f-skill').value = row.skill;
+                document.getElementById('f-link').value = row.portfolio_link;
+                document.getElementById('f-projects').value = (row.projects || []).join('\n');
+                document.getElementById('f-desc').value = row.description || '';
+                document.getElementById('f-image').value = row.image_url || '';
+                openModal('form-overlay');
+            } catch (e) { toast('Could not load entry: ' + e.message, 'error'); }
+        }
+
+        async function savePortfolio() {
+            const skill = document.getElementById('f-skill').value.trim();
+            const link = document.getElementById('f-link').value.trim();
+            const projRaw = document.getElementById('f-projects').value.trim();
+            const desc = document.getElementById('f-desc').value.trim();
+            const imageUrl = document.getElementById('f-image').value.trim();
+            const editId = document.getElementById('edit-id').value;
+
+            if (!skill || !link || !projRaw) {
+                toast('Skill, Portfolio Link and Projects are required.', 'error'); return;
+            }
+
+            const projects = projRaw.split('\n').map(p => p.trim()).filter(Boolean);
+            const payload = { skill, portfolio_link: link, projects, description: desc, image_url: imageUrl || null };
+
+            const btn = document.getElementById('save-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="mspin"></span> Saving…';
+
+            try {
+                editId
+                    ? await adminFetch('PUT', '/portfolios/' + editId, payload)
+                    : await adminFetch('POST', '/portfolios', payload);
+
+                toast(editId ? 'Entry updated ✓' : 'Entry added ✓', 'success');
+                closeModal('form-overlay');
+                await loadPortfolios();
+                await loadAdminStats();
+            } catch (e) {
+                toast('Save failed: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = editId ? 'Update Entry' : 'Save Entry';
+            }
+        }
+
+        /* ─── Delete ─────────────────────────────────────────────── */
+        function openDeleteConfirm(id, skill) {
+            deleteId = id;
+            document.getElementById('confirm-skill-name').textContent = '"' + skill + '"';
+            openModal('confirm-overlay');
+        }
+
+        async function confirmDelete() {
+            if (!deleteId) return;
+            const btn = document.getElementById('confirm-del-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="mspin" style="border-top-color:var(--red)"></span> Deleting…';
+
+            try {
+                await adminFetch('DELETE', '/portfolios/' + deleteId);
+                toast('Entry deleted.', 'info');
+                closeModal('confirm-overlay');
+                await loadPortfolios();
+                await loadAdminStats();
+            } catch (e) {
+                toast('Delete failed: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Yes, Delete';
+                deleteId = null;
+            }
+        }
+
+        /* ─── Sync Vector Store ──────────────────────────────────── */
+        async function syncVectorStore() {
+            if (!confirm('Rebuild the entire vector store from the database?\nThis may take a few seconds.')) return;
+            toast('Syncing vector store…', 'info');
+            try {
+                const r = await adminFetch('POST', '/sync');
+                toast(`Vector store rebuilt — ${r.synced_count} entries synced ✓`, 'success');
+                await loadAdminStats();
+            } catch (e) {
+                toast('Sync failed: ' + e.message, 'error');
+            }
+        }
+
+        /* ─── Email Generator ────────────────────────────────────── */
+        async function generateEmail() {
+            const jobUrl = document.getElementById('jobUrl').value.trim();
+            const errMsg = document.getElementById('error-msg');
+            const results = document.getElementById('results');
+            const btn = document.getElementById('gen-btn');
+            const btnText = document.getElementById('gen-btn-text');
+
+            if (!jobUrl) { showError('Please enter a job posting URL.'); return; }
+            try { new URL(jobUrl); } catch { showError('Enter a valid URL (include https://)'); return; }
+
+            errMsg.classList.remove('show');
+            results.classList.remove('show');
+
+            btn.disabled = true;
+            btnText.innerHTML = '<span class="gen-spinner"></span> Generating…';
+
+            try {
+                const res = await fetch('/api/generate-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ job_url: jobUrl })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || 'Failed to generate email');
+                }
+
+                displayResults(await res.json());
+
+            } catch (e) {
+                showError(e.message || 'An error occurred. Please try again.');
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = '✨ Generate';
+            }
+        }
+
+        function displayResults(data) {
+            // Subject
+            document.getElementById('emailSubject').textContent = data.email_subject;
+
+            // Body — smart paragraph splitting
+            let emailBody = data.email_body;
+            if (emailBody.toLowerCase().startsWith('subject:'))
+                emailBody = emailBody.split('\n').slice(1).join('\n').trim();
+
+            const bodyEl = document.getElementById('emailBody');
+            let paras = emailBody.split(/\n\n+/);
+
+            if (paras.length <= 2) {
+                const sents = emailBody.split(/\.(\s+)(?=[A-Z])/);
+                paras = []; let cur = '';
+                for (let i = 0; i < sents.length; i++) {
+                    const s = sents[i].trim(); if (!s) continue;
+                    cur += (cur ? ' ' : '') + (s.endsWith('.') ? s : s + '.');
+                    if ((i + 1) % 3 === 0 || i === sents.length - 1) {
+                        if (cur.trim()) { paras.push(cur.trim()); cur = ''; }
+                    }
+                }
+            }
+
+            bodyEl.innerHTML = paras.filter(p => p.trim()).map(p => `<p>${p.trim()}</p>`).join('');
+
+            // Job details
+            document.getElementById('jobRole').textContent = data.job_details.job_role;
+            document.getElementById('jobDescription').textContent = data.job_details.description;
+
+            const chips = document.getElementById('skillsList');
+            chips.innerHTML = '';
+            data.job_details.skills.forEach(s => {
+                const el = document.createElement('span');
+                el.className = 'skill-chip'; el.textContent = s;
+                chips.appendChild(el);
+            });
+
+            const expRow = document.getElementById('experienceRow');
+            const locRow = document.getElementById('locationRow');
+            expRow.style.display = data.job_details.experience_level ? 'flex' : 'none';
+            locRow.style.display = data.job_details.location ? 'flex' : 'none';
+            if (data.job_details.experience_level)
+                document.getElementById('jobExperience').textContent = data.job_details.experience_level;
+            if (data.job_details.location)
+                document.getElementById('jobLocation').textContent = data.job_details.location;
+
+            // Portfolio matches
+            const portSection = document.getElementById('portfolioSection');
+            const portGrid = document.getElementById('portfolioMatches');
+
+            if (data.matched_portfolios?.length) {
+                portGrid.innerHTML = '';
+                data.matched_portfolios.forEach(m => {
+                    portGrid.innerHTML += `
+        <div class="port-card">
+          <div class="port-skill">${m.skill}</div>
+          <div class="port-score">${Math.round(m.relevance_score * 100)}% match</div>
+          <div class="port-projects">${m.projects.join(', ')}</div>
+          <a href="${m.portfolio_link}" target="_blank" class="port-link">View Portfolio →</a>
+        </div>`;
+                });
+                portSection.style.display = 'block';
+            } else {
+                portSection.style.display = 'none';
+            }
+
+            // Stats
+            document.getElementById('matchCount').textContent = data.matched_portfolios?.length || 0;
+            document.getElementById('processingTime').textContent = data.processing_time.toFixed(2) + 's';
+            document.getElementById('skillCount').textContent = data.job_details.skills.length;
+
+            document.getElementById('results').classList.add('show');
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function copyEmail() {
+            const subject = document.getElementById('emailSubject').textContent;
+            const body = document.getElementById('emailBody').innerText;
+            navigator.clipboard.writeText(`Subject: ${subject}\n\n${body}`).then(() => {
+                const btn = event.target;
+                const orig = btn.textContent;
+                btn.textContent = '✅ Copied!';
+                setTimeout(() => btn.textContent = orig, 2000);
+            }).catch(() => showError('Failed to copy to clipboard'));
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('error-msg');
+            el.textContent = '❌ ' + msg;
+            el.classList.add('show');
+        }
+
+        /* ─── Modal helpers ──────────────────────────────────────── */
+        function openModal(id) { document.getElementById(id).classList.add('open'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+        document.querySelectorAll('.overlay').forEach(el =>
+            el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); })
+        );
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape')
+                document.querySelectorAll('.overlay.open').forEach(o => o.classList.remove('open'));
+        });
+
+        function clearForm() {
+            ['f-skill', 'f-link', 'f-projects', 'f-desc', 'f-image'].forEach(id => {
+                document.getElementById(id).value = '';
+            });
+        }
+
+        /* ─── Toast ──────────────────────────────────────────────── */
+        function toast(msg, type = 'info') {
+            const icons = { success: '✓', error: '✗', info: 'ℹ' };
+            const el = document.createElement('div');
+            el.className = 'toast ' + type;
+            el.innerHTML = `<span>${icons[type]}</span> ${msg}`;
+            document.getElementById('toast-wrap').appendChild(el);
+            setTimeout(() => el.remove(), 4000);
+        }
+
+        /* ─── Util ───────────────────────────────────────────────── */
+        function esc(s = '') {
+            return String(s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        /* ─── Init ───────────────────────────────────────────────── */
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('jobUrl').addEventListener('keypress', e => {
+                if (e.key === 'Enter') generateEmail();
+            });
+        });
+
+        /* ═══════════════════════════════════════════════════════
+           EMAIL HISTORY FUNCTIONS
+        ═══════════════════════════════════════════════════════ */
+
+        let allEmails = [];
+        let currentEmailId = null;
+
+        // Load email stats
+        async function loadEmailStats() {
+            try {
+                const data = await adminFetch('GET', '/emails/stats/dashboard');
+                document.getElementById('hist-total').textContent = data.total_generated;
+                document.getElementById('hist-sent').textContent = data.total_sent;
+                document.getElementById('hist-rate').textContent = data.response_rate + '%';
+            } catch (e) { console.error('Stats error:', e); }
+        }
+
+        // Load all emails
+        async function loadEmails() {
+            const tbody = document.getElementById('hist-tbody');
+            tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="ei">⏳</div><p>Loading…</p></div></td></tr>`;
+
+            try {
+                const data = await adminFetch('GET', '/emails?limit=100');
+                allEmails = data.emails || [];
+                renderEmailTable(allEmails);
+            } catch (e) {
+                toast('Failed to load emails: ' + e.message, 'error');
+                tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="ei">⚠️</div><p>${e.message}</p></div></td></tr>`;
+            }
+        }
+
+        // Render email table
+        function renderEmailTable(emails) {
+            const tbody = document.getElementById('hist-tbody');
+            document.getElementById('hist-count').textContent = emails.length + ' emails';
+
+            if (!emails.length) {
+                tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="ei">📭</div><p>No emails yet. Generate your first email in the Email Generator tab!</p></div></td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = emails.map(e => {
+                const date = new Date(e.generated_at);
+                const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+                const statusIcons = {
+                    draft: '○',
+                    sent: '●',
+                    responded: '●',
+                    interested: '✓',
+                    not_interested: '✗'
+                };
+
+                const statusColors = {
+                    draft: 'var(--sub)',
+                    sent: 'var(--green)',
+                    responded: 'var(--blue)',
+                    interested: 'var(--lime)',
+                    not_interested: 'var(--red)'
+                };
+
+                const icon = statusIcons[e.status] || '○';
+                const color = statusColors[e.status] || 'var(--sub)';
+                const statusLabel = e.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+                return `
+            <tr style="cursor:pointer" onclick="openEmailDetail(${e.id})">
+                <td style="font-size:.82rem;color:var(--sub)">${dateStr}</td>
+                <td><span class="skill-badge">${esc(e.company_name || 'Unknown')}</span></td>
+                <td class="tbl-muted" style="max-width:200px">${esc(e.job_role)}</td>
+                <td><span style="color:${color};font-size:.85rem">${icon} ${statusLabel}</span></td>
+                <td style="text-align:right">
+                    <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEmailDetail(${e.id})">View</button>
+                </td>
+            </tr>
+        `;
+            }).join('');
+        }
+
+        // Filter emails
+        function filterEmails() {
+            const search = document.getElementById('hist-search').value.toLowerCase();
+            const status = document.getElementById('hist-status-filter').value;
+
+            let filtered = allEmails;
+
+            if (status) {
+                filtered = filtered.filter(e => e.status === status);
+            }
+
+            if (search) {
+                filtered = filtered.filter(e =>
+                    (e.company_name || '').toLowerCase().includes(search) ||
+                    (e.job_role || '').toLowerCase().includes(search) ||
+                    (e.email_subject || '').toLowerCase().includes(search)
+                );
+            }
+
+            renderEmailTable(filtered);
+        }
+
+        // Open email detail modal
+        async function openEmailDetail(id) {
+            currentEmailId = id;
+
+            try {
+                const email = await adminFetch('GET', '/emails/' + id);
+
+                document.getElementById('email-detail-id').value = email.id;
+                document.getElementById('email-detail-title').textContent = (email.company_name || 'Unknown') + ' — ' + email.job_role;
+                document.getElementById('email-detail-subject').textContent = email.email_subject;
+                document.getElementById('email-detail-body').innerHTML = email.email_body.split('\n\n').map(p => `<p style="margin-bottom:1rem">${p}</p>`).join('');
+                document.getElementById('email-detail-company').textContent = email.company_name || 'Unknown';
+                document.getElementById('email-detail-url').href = email.job_url;
+                document.getElementById('email-detail-url').textContent = email.job_url;
+                document.getElementById('email-detail-skills').textContent = (email.skills || []).join(', ');
+                document.getElementById('email-detail-status').value = email.status || 'draft';
+                document.getElementById('email-detail-notes').value = email.notes || '';
+
+                const genDate = new Date(email.generated_at);
+                document.getElementById('email-detail-generated').textContent = genDate.toLocaleString();
+
+                openModal('email-detail-overlay');
+            } catch (e) {
+                toast('Failed to load email: ' + e.message, 'error');
+            }
+        }
+
+        // Save email details
+        async function saveEmailDetails() {
+            if (!currentEmailId) return;
+
+            const status = document.getElementById('email-detail-status').value;
+            const notes = document.getElementById('email-detail-notes').value;
+
+            const btn = document.getElementById('save-email-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="mspin"></span> Saving…';
+
+            try {
+                await adminFetch('PUT', '/emails/' + currentEmailId, { status, notes });
+                toast('Email updated ✓', 'success');
+                closeModal('email-detail-overlay');
+                await loadEmails();
+                await loadEmailStats();
+            } catch (e) {
+                toast('Update failed: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '💾 Save Changes';
+            }
+        }
+
+        // Delete email
+        async function deleteEmail() {
+            if (!currentEmailId) return;
+            if (!confirm('Delete this email from history?')) return;
+
+            try {
+                await adminFetch('DELETE', '/emails/' + currentEmailId);
+                toast('Email deleted', 'info');
+                closeModal('email-detail-overlay');
+                await loadEmails();
+                await loadEmailStats();
+                currentEmailId = null;
+            } catch (e) {
+                toast('Delete failed: ' + e.message, 'error');
+            }
+        }
+
+        // Export emails to CSV
+        async function exportEmails() {
+            try {
+                const status = document.getElementById('hist-status-filter').value;
+                let url = '/emails/export/csv';
+                if (status) url += '?status=' + status;
+
+                const res = await fetch('/api' + url, {
+                    headers: { 'Authorization': 'Basic ' + CREDS }
+                });
+
+                if (!res.ok) throw new Error('Export failed');
+
+                const blob = await res.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = 'email_history_' + new Date().toISOString().split('T')[0] + '.csv';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(downloadUrl);
+
+                toast('Exported to CSV ✓', 'success');
+            } catch (e) {
+                toast('Export failed: ' + e.message, 'error');
+            }
+        }
+
+    </script>
+</body>
+
+</html>
