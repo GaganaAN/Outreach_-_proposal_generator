@@ -130,6 +130,20 @@ async def update_opportunity(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ── Email Test ─────────────────────────────────────────────────────────────────
+
+@router.post("/admin/test-email")
+async def test_email_config(
+    _: str = Depends(verify_admin),
+):
+    """Send a test email to MARKETING_EMAIL to verify SMTP configuration."""
+    from app.services.notification_service import get_notification_service
+    result = get_notification_service().test_email()
+    if not result["success"]:
+        raise HTTPException(status_code=400, detail=result["error"])
+    return result
+
+
 # ── Notification Endpoints ─────────────────────────────────────────────────────
 
 @router.get("/notifications/")

@@ -116,7 +116,9 @@ class NotificationService:
             msg.attach(MIMEText(html_body, "html"))
 
             with smtplib.SMTP(self.settings.SMTP_HOST, self.settings.SMTP_PORT) as server:
+                server.ehlo()
                 server.starttls()
+                server.ehlo()
                 if self.settings.SMTP_USERNAME and self.settings.SMTP_PASSWORD:
                     server.login(self.settings.SMTP_USERNAME, self.settings.SMTP_PASSWORD)
                 server.sendmail(msg["From"], [self.settings.MARKETING_EMAIL], msg.as_string())
@@ -124,9 +126,72 @@ class NotificationService:
             logger.info(f"Alert email sent to {self.settings.MARKETING_EMAIL}")
             return True
 
+        except smtplib.SMTPAuthenticationError as e:
+            logger.error(
+                f"SMTP authentication failed — Gmail requires an App Password, not your account "
+                f"password. Generate one at myaccount.google.com → Security → App Passwords. Error: {e}"
+            )
+            return False
+        except smtplib.SMTPConnectError as e:
+            logger.error(f"Cannot connect to SMTP server {self.settings.SMTP_HOST}:{self.settings.SMTP_PORT} — {e}")
+            return False
+        except smtplib.SMTPException as e:
+            logger.error(f"SMTP error sending alert email: {e}")
+            return False
         except Exception as e:
             logger.warning(f"Email alert failed (non-critical): {e}")
             return False
+
+    def test_email(self) -> dict:
+        """Send a test email to MARKETING_EMAIL to verify SMTP config. Returns status dict."""
+        if not self.settings.SMTP_HOST:
+            return {"success": False, "error": "SMTP_HOST is not configured in .env"}
+        if not self.settings.MARKETING_EMAIL:
+            return {"success": False, "error": "MARKETING_EMAIL is not configured in .env"}
+
+        try:
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = "[Mailposalix] SMTP Test Email"
+            msg["From"] = self.settings.SMTP_FROM_EMAIL or self.settings.SMTP_USERNAME
+            msg["To"] = self.settings.MARKETING_EMAIL
+            body = (
+                "This is a test email from Mailposalix.\n\n"
+                "If you received this, your SMTP configuration is working correctly.\n\n"
+                f"From: {self.settings.SMTP_FROM_EMAIL or self.settings.SMTP_USERNAME}\n"
+                f"To: {self.settings.MARKETING_EMAIL}\n"
+                f"Host: {self.settings.SMTP_HOST}:{self.settings.SMTP_PORT}"
+            )
+            msg.attach(MIMEText(body, "plain"))
+
+            with smtplib.SMTP(self.settings.SMTP_HOST, self.settings.SMTP_PORT) as server:
+                server.ehlo()
+                server.starttls()
+                server.ehlo()
+                if self.settings.SMTP_USERNAME and self.settings.SMTP_PASSWORD:
+                    server.login(self.settings.SMTP_USERNAME, self.settings.SMTP_PASSWORD)
+                server.sendmail(msg["From"], [self.settings.MARKETING_EMAIL], msg.as_string())
+
+            logger.info(f"Test email sent successfully to {self.settings.MARKETING_EMAIL}")
+            return {"success": True, "message": f"Test email sent to {self.settings.MARKETING_EMAIL}"}
+
+        except smtplib.SMTPAuthenticationError:
+            return {
+                "success": False,
+                "error": (
+                    "Authentication failed. Gmail requires an App Password — not your regular account password. "
+                    "Go to myaccount.google.com → Security → 2-Step Verification → App Passwords, "
+                    "create one and paste it as SMTP_PASSWORD in .env"
+                ),
+            }
+        except smtplib.SMTPConnectError as e:
+            return {
+                "success": False,
+                "error": f"Cannot connect to {self.settings.SMTP_HOST}:{self.settings.SMTP_PORT} — {e}",
+            }
+        except smtplib.SMTPException as e:
+            return {"success": False, "error": f"SMTP error: {e}"}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
 
 
 # Singleton

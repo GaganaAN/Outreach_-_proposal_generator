@@ -93,11 +93,13 @@
         .sidebar.collapsed .nav-item {
             justify-content: center;
             padding: 10px;
-            font-size: 0;        /* hide text nodes */
+            font-size: 0;
+            /* hide text nodes */
         }
 
         .sidebar.collapsed .nav-item .ni {
-            font-size: .95rem;   /* restore icon */
+            font-size: .95rem;
+            /* restore icon */
         }
 
         .sidebar.collapsed .sb-brand {
@@ -135,7 +137,10 @@
             padding: 0;
         }
 
-        .sb-toggle:hover { background: var(--raised); color: var(--text); }
+        .sb-toggle:hover {
+            background: var(--raised);
+            color: var(--text);
+        }
 
         .sb-brand {
             padding: 28px 24px 20px;
@@ -1144,7 +1149,12 @@
             font-size: 1rem;
             transition: all .15s ease;
         }
-        .notif-btn:hover { background: var(--raised); color: var(--text); }
+
+        .notif-btn:hover {
+            background: var(--raised);
+            color: var(--text);
+        }
+
         .notif-badge {
             position: absolute;
             top: -5px;
@@ -1174,13 +1184,17 @@
             background: var(--surface);
             border: 1px solid var(--border2);
             border-radius: var(--r-lg);
-            box-shadow: 0 16px 48px rgba(0,0,0,.6);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, .6);
             z-index: 500;
             display: none;
             flex-direction: column;
             overflow: hidden;
         }
-        .notif-panel.open { display: flex; }
+
+        .notif-panel.open {
+            display: flex;
+        }
+
         .notif-panel-head {
             display: flex;
             align-items: center;
@@ -1189,35 +1203,51 @@
             border-bottom: 1px solid var(--border);
             flex-shrink: 0;
         }
+
         .notif-panel-head h4 {
             font-size: .85rem;
             font-weight: 600;
             color: var(--text);
         }
+
         .notif-panel-body {
             overflow-y: auto;
             flex: 1;
         }
+
         .notif-item {
             padding: 14px 18px;
             border-bottom: 1px solid var(--border);
             cursor: pointer;
             transition: background .12s;
         }
-        .notif-item:hover { background: var(--raised); }
-        .notif-item.unread { border-left: 3px solid var(--amber); }
-        .notif-item.read   { border-left: 3px solid transparent; opacity: .7; }
+
+        .notif-item:hover {
+            background: var(--raised);
+        }
+
+        .notif-item.unread {
+            border-left: 3px solid var(--amber);
+        }
+
+        .notif-item.read {
+            border-left: 3px solid transparent;
+            opacity: .7;
+        }
+
         .notif-item-title {
             font-size: .83rem;
             font-weight: 600;
             color: var(--text);
             margin-bottom: 4px;
         }
+
         .notif-item-meta {
             font-size: .75rem;
             color: var(--sub);
             font-family: var(--mono);
         }
+
         .notif-item-msg {
             font-size: .78rem;
             color: var(--sub);
@@ -1229,12 +1259,14 @@
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
+
         .notif-empty {
             padding: 40px;
             text-align: center;
             color: var(--dim);
             font-size: .83rem;
         }
+
         .notif-panel-foot {
             padding: 10px 18px;
             border-top: 1px solid var(--border);
@@ -1382,7 +1414,7 @@
     <!-- ══ SIDEBAR ══════════════════════════════════════════════ -->
     <nav class="sidebar">
         <div class="sb-brand">
-            <div class="sb-wordmark">Ivoyant</div>
+            <div class="sb-wordmark">Mailposalix </div>
             <div class="sb-tagline">Outreach Platform</div>
         </div>
 
@@ -1393,11 +1425,13 @@
             </button>
             <button class="nav-item" id="nav-signals" onclick="showPage('signals')">
                 <span class="ni">📡</span> Signals
-                <span id="signals-badge" style="margin-left:auto;background:#4f8eff;color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;display:none"></span>
+                <span id="signals-badge"
+                    style="margin-left:auto;background:#4f8eff;color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;display:none"></span>
             </button>
             <button class="nav-item" id="nav-opportunities" onclick="showPage('opportunities')">
                 <span class="ni">🎯</span> Opportunities
-                <span id="opps-badge" style="margin-left:auto;background:#f0a030;color:#080b12;font-size:10px;padding:1px 6px;border-radius:10px;display:none"></span>
+                <span id="opps-badge"
+                    style="margin-left:auto;background:#f0a030;color:#080b12;font-size:10px;padding:1px 6px;border-radius:10px;display:none"></span>
             </button>
             <button class="nav-item" id="nav-proposals" onclick="showPage('proposals')">
                 <span class="ni">📄</span> Proposals
@@ -1455,13 +1489,15 @@
         <div class="notif-panel" id="notif-panel">
             <div class="notif-panel-head">
                 <h4>Notifications</h4>
-                <button class="btn btn-ghost btn-sm" onclick="markAllRead()" style="font-size:11px;padding:4px 10px;">Mark all read</button>
+                <button class="btn btn-ghost btn-sm" onclick="markAllRead()"
+                    style="font-size:11px;padding:4px 10px;">Mark all read</button>
             </div>
             <div class="notif-panel-body" id="notif-panel-body">
                 <div class="notif-empty">Loading…</div>
             </div>
             <div class="notif-panel-foot">
-                <button class="btn btn-ghost btn-sm" style="width:100%;font-size:12px;" onclick="toggleNotifPanel()">Close</button>
+                <button class="btn btn-ghost btn-sm" style="width:100%;font-size:12px;"
+                    onclick="toggleNotifPanel()">Close</button>
             </div>
         </div>
 
@@ -1484,9 +1520,10 @@
                             <span id="gen-btn-text">✨ Generate</span>
                         </button>
                     </div>
-                    <label class="field-label" style="margin-top:10px;">Company Website <span style="color:var(--sub);font-weight:400;">(optional — for AI personalization)</span></label>
-                    <input class="url-field" id="companyUrl" type="url"
-                        placeholder="https://www.company.com" style="width:100%;margin-top:4px;">
+                    <label class="field-label" style="margin-top:10px;">Company Website <span
+                            style="color:var(--sub);font-weight:400;">(optional — for AI personalization)</span></label>
+                    <input class="url-field" id="companyUrl" type="url" placeholder="https://www.company.com"
+                        style="width:100%;margin-top:4px;">
                     <div class="error-msg" id="error-msg"></div>
                 </div>
 
@@ -1717,27 +1754,44 @@
         <div class="page" id="page-signals">
             <div style="padding:40px;max-width:1100px;">
                 <h2 style="font-family:var(--serif);font-size:1.8rem;margin-bottom:6px;">Signal <em>Classifier</em></h2>
-                <p style="color:var(--sub);margin-bottom:24px;">Paste a job posting URL or any text to classify it and route it to the right workflow.</p>
+                <p style="color:var(--sub);margin-bottom:24px;">Paste a job posting URL or any text to classify it and
+                    route it to the right workflow.</p>
 
                 <div class="input-card" style="margin-bottom:24px;">
                     <label class="field-label">URL or Text to Classify</label>
-                    <textarea id="signalInput" rows="4" style="width:100%;background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-sm);padding:12px;color:var(--text);font-family:var(--sans);font-size:14px;resize:vertical;margin-top:6px;" placeholder="https://jobs.company.com/role  OR paste any job description / RFP notice text..."></textarea>
-                    <button class="btn btn-lime" style="margin-top:12px;" onclick="classifySignal()">📡 Classify Signal</button>
+                    <textarea id="signalInput" rows="4"
+                        style="width:100%;background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-sm);padding:12px;color:var(--text);font-family:var(--sans);font-size:14px;resize:vertical;margin-top:6px;"
+                        placeholder="https://jobs.company.com/role  OR paste any job description / RFP notice text..."></textarea>
+                    <button class="btn btn-lime" style="margin-top:12px;" onclick="classifySignal()">📡 Classify
+                        Signal</button>
                     <div id="signal-result" style="margin-top:16px;display:none;"></div>
                 </div>
 
                 <h3 style="font-size:1rem;font-weight:600;margin-bottom:12px;color:var(--sub);">Recent Signals</h3>
                 <div id="signals-table-wrap">
                     <table style="width:100%;border-collapse:collapse;">
-                        <thead><tr style="color:var(--sub);font-size:12px;text-transform:uppercase;letter-spacing:.05em;">
-                            <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Type</th>
-                            <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Company</th>
-                            <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Skills</th>
-                            <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Confidence</th>
-                            <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Date</th>
-                            <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Status</th>
-                        </tr></thead>
-                        <tbody id="signals-tbody"><tr><td colspan="6" style="padding:32px;text-align:center;color:var(--sub);">Loading signals…</td></tr></tbody>
+                        <thead>
+                            <tr style="color:var(--sub);font-size:12px;text-transform:uppercase;letter-spacing:.05em;">
+                                <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Type
+                                </th>
+                                <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">
+                                    Company</th>
+                                <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">
+                                    Skills</th>
+                                <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">
+                                    Confidence</th>
+                                <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Date
+                                </th>
+                                <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">
+                                    Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="signals-tbody">
+                            <tr>
+                                <td colspan="6" style="padding:32px;text-align:center;color:var(--sub);">Loading
+                                    signals…</td>
+                            </tr>
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -1746,18 +1800,34 @@
         <!-- ══ OPPORTUNITIES PAGE ══════════════════════════════════ -->
         <div class="page" id="page-opportunities">
             <div style="padding:40px;max-width:1100px;">
-                <h2 style="font-family:var(--serif);font-size:1.8rem;margin-bottom:6px;">Opportunity <em>Pipeline</em></h2>
-                <p style="color:var(--sub);margin-bottom:24px;">Track scored sales opportunities detected from signals.</p>
+                <h2 style="font-family:var(--serif);font-size:1.8rem;margin-bottom:6px;">Opportunity <em>Pipeline</em>
+                </h2>
+                <p style="color:var(--sub);margin-bottom:24px;">Track scored sales opportunities detected from signals.
+                </p>
 
-                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;" id="opp-stats-grid">
-                    <div class="stat-card"><div class="stat-num" id="opp-total">—</div><div class="stat-lbl">Total</div></div>
-                    <div class="stat-card"><div class="stat-num" style="color:var(--red)" id="opp-high">—</div><div class="stat-lbl">High Priority</div></div>
-                    <div class="stat-card"><div class="stat-num" style="color:var(--blue)" id="opp-email">—</div><div class="stat-lbl">Email Sent</div></div>
-                    <div class="stat-card"><div class="stat-num" style="color:var(--green)" id="opp-prop">—</div><div class="stat-lbl">Proposals</div></div>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;"
+                    id="opp-stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-num" id="opp-total">—</div>
+                        <div class="stat-lbl">Total</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-num" style="color:var(--red)" id="opp-high">—</div>
+                        <div class="stat-lbl">High Priority</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-num" style="color:var(--blue)" id="opp-email">—</div>
+                        <div class="stat-lbl">Email Sent</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-num" style="color:var(--green)" id="opp-prop">—</div>
+                        <div class="stat-lbl">Proposals</div>
+                    </div>
                 </div>
 
                 <div style="margin-bottom:12px;display:flex;gap:10px;flex-wrap:wrap;">
-                    <select id="opp-filter-status" onchange="loadOpportunities()" style="background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-sm);padding:8px 12px;color:var(--text);font-size:13px;">
+                    <select id="opp-filter-status" onchange="loadOpportunities()"
+                        style="background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-sm);padding:8px 12px;color:var(--text);font-size:13px;">
                         <option value="">All Statuses</option>
                         <option value="new">New</option>
                         <option value="email_sent">Email Sent</option>
@@ -1766,7 +1836,8 @@
                         <option value="proposal_sent">Proposal Sent</option>
                         <option value="closed">Closed</option>
                     </select>
-                    <select id="opp-filter-priority" onchange="loadOpportunities()" style="background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-sm);padding:8px 12px;color:var(--text);font-size:13px;">
+                    <select id="opp-filter-priority" onchange="loadOpportunities()"
+                        style="background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-sm);padding:8px 12px;color:var(--text);font-size:13px;">
                         <option value="">All Priorities</option>
                         <option value="high">High</option>
                         <option value="medium">Medium</option>
@@ -1775,16 +1846,30 @@
                 </div>
 
                 <table style="width:100%;border-collapse:collapse;">
-                    <thead><tr style="color:var(--sub);font-size:12px;text-transform:uppercase;letter-spacing:.05em;">
-                        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Company</th>
-                        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Type</th>
-                        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Score</th>
-                        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Priority</th>
-                        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Status</th>
-                        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Date</th>
-                        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Action</th>
-                    </tr></thead>
-                    <tbody id="opps-tbody"><tr><td colspan="7" style="padding:32px;text-align:center;color:var(--sub);">Loading opportunities…</td></tr></tbody>
+                    <thead>
+                        <tr style="color:var(--sub);font-size:12px;text-transform:uppercase;letter-spacing:.05em;">
+                            <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Company
+                            </th>
+                            <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Type
+                            </th>
+                            <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Score
+                            </th>
+                            <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Priority
+                            </th>
+                            <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Status
+                            </th>
+                            <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Date
+                            </th>
+                            <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Action
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="opps-tbody">
+                        <tr>
+                            <td colspan="7" style="padding:32px;text-align:center;color:var(--sub);">Loading
+                                opportunities…</td>
+                        </tr>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -1792,22 +1877,30 @@
         <!-- ══ PROPOSALS PAGE ═════════════════════════════════════ -->
         <div class="page" id="page-proposals">
             <div style="padding:40px;max-width:960px;">
-                <h2 style="font-family:var(--serif);font-size:1.8rem;margin-bottom:6px;">Proposal <em>Generator</em></h2>
-                <p style="color:var(--sub);margin-bottom:24px;">Upload an RFP document (PDF, DOCX, or TXT) to auto-generate a technical proposal.</p>
+                <h2 style="font-family:var(--serif);font-size:1.8rem;margin-bottom:6px;">Proposal <em>Generator</em>
+                </h2>
+                <p style="color:var(--sub);margin-bottom:24px;">Upload an RFP document (PDF, DOCX, or TXT) to
+                    auto-generate a technical proposal.</p>
 
                 <div class="input-card" style="margin-bottom:28px;">
                     <label class="field-label">RFP Document</label>
-                    <input type="file" id="rfpFile" accept=".pdf,.docx,.txt,.md" style="margin-top:8px;color:var(--text);">
-                    <label class="field-label" style="margin-top:12px;">Linked Opportunity ID <span style="color:var(--sub);font-weight:400;">(optional)</span></label>
-                    <input type="number" id="rfpOppId" placeholder="e.g. 42" style="background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-sm);padding:10px 12px;color:var(--text);font-size:14px;width:200px;margin-top:6px;">
+                    <input type="file" id="rfpFile" accept=".pdf,.docx,.txt,.md"
+                        style="margin-top:8px;color:var(--text);">
+                    <label class="field-label" style="margin-top:12px;">Linked Opportunity ID <span
+                            style="color:var(--sub);font-weight:400;">(optional)</span></label>
+                    <input type="number" id="rfpOppId" placeholder="e.g. 42"
+                        style="background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-sm);padding:10px 12px;color:var(--text);font-size:14px;width:200px;margin-top:6px;">
                     <div style="margin-top:14px;">
                         <button class="btn btn-lime" onclick="uploadRFP()">📄 Generate Proposal</button>
                     </div>
-                    <div id="rfp-progress" style="display:none;margin-top:10px;color:var(--sub);font-size:13px;">⏳ Processing RFP and generating proposal…</div>
+                    <div id="rfp-progress" style="display:none;margin-top:10px;color:var(--sub);font-size:13px;">⏳
+                        Processing RFP and generating proposal…</div>
                 </div>
 
                 <h3 style="font-size:1rem;font-weight:600;margin-bottom:12px;color:var(--sub);">Generated Proposals</h3>
-                <div id="proposals-list"><p style="color:var(--sub);">Loading…</p></div>
+                <div id="proposals-list">
+                    <p style="color:var(--sub);">Loading…</p>
+                </div>
 
                 <div id="proposal-detail" style="display:none;margin-top:24px;"></div>
             </div>
@@ -1817,22 +1910,60 @@
         <div class="page" id="page-discovery">
             <div style="padding:40px;max-width:1100px;">
                 <h2 style="font-family:var(--serif);font-size:1.8rem;margin-bottom:6px;">Lead <em>Discovery</em></h2>
-                <p style="color:var(--sub);margin-bottom:24px;">Configure sources for the automated background scanner. The agent will periodically scrape these URLs and classify signals automatically.</p>
+                <p style="color:var(--sub);margin-bottom:24px;">Configure sources for the automated background scanner.
+                    The agent will periodically scrape these URLs and classify signals automatically.</p>
 
-                <div style="margin-bottom:20px;">
-                    <button class="btn btn-lime" onclick="openAddSourceModal()">+ Add Source</button>
+                <!-- ── Enhancement Cards Row ─────────────────────────── -->
+                <div style="display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:28px;max-width:560px;">
+
+                    <!-- Global Search Card -->
+                    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:20px;">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                            <span style="font-size:1.1rem;">🔍</span>
+                            <span style="font-weight:600;font-size:.95rem;">Global Search</span>
+                            <span id="search-status-badge" style="margin-left:auto;font-size:11px;padding:2px 8px;border-radius:10px;background:var(--raised);color:var(--sub);">Loading…</span>
+                        </div>
+                        <p style="color:var(--sub);font-size:.8rem;margin-bottom:14px;">
+                            Searches DuckDuckGo with configured keywords to discover RFPs and hiring signals automatically — runs alongside source scanning.
+                        </p>
+                        <div style="margin-bottom:12px;">
+                            <label style="font-size:.75rem;color:var(--sub);text-transform:uppercase;letter-spacing:.08em;">Search Keywords</label>
+                            <textarea id="search-keywords-input" rows="3"
+                                style="width:100%;margin-top:4px;background:var(--raised);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);padding:8px;font-size:.78rem;font-family:var(--mono);resize:vertical;"
+                                placeholder="One keyword/phrase per line…"></textarea>
+                            <div style="font-size:.72rem;color:var(--dim);margin-top:3px;">One keyword or phrase per line. These are used as DuckDuckGo search queries.</div>
+                        </div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <button class="btn btn-lime btn-sm" onclick="runGlobalSearch()" id="search-now-btn">🔍 Search Now</button>
+                            <button class="btn btn-ghost btn-sm" onclick="saveSearchKeywords()">Save Keywords</button>
+                        </div>
+                        <div id="search-result-msg" style="margin-top:10px;font-size:.78rem;display:none;"></div>
+                    </div>
+
+                </div>
+
+                <!-- ── Configured Sources Table ───────────────────────── -->
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                    <span style="font-weight:600;font-size:.9rem;color:var(--sub);text-transform:uppercase;letter-spacing:.06em;">Configured Sources</span>
+                    <button class="btn btn-lime btn-sm" onclick="openAddSourceModal()">+ Add Source</button>
                 </div>
 
                 <table style="width:100%;border-collapse:collapse;">
-                    <thead><tr style="color:var(--sub);font-size:12px;text-transform:uppercase;letter-spacing:.05em;">
-                        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Name</th>
-                        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Type</th>
-                        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">URL</th>
-                        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Active</th>
-                        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Last Scanned</th>
-                        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Actions</th>
-                    </tr></thead>
-                    <tbody id="discovery-tbody"><tr><td colspan="6" style="padding:32px;text-align:center;color:var(--sub);">Loading sources…</td></tr></tbody>
+                    <thead>
+                        <tr style="color:var(--sub);font-size:12px;text-transform:uppercase;letter-spacing:.05em;">
+                            <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Name</th>
+                            <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Type</th>
+                            <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">URL</th>
+                            <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Active</th>
+                            <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Last Scanned</th>
+                            <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="discovery-tbody">
+                        <tr>
+                            <td colspan="6" style="padding:32px;text-align:center;color:var(--sub);">Loading sources…</td>
+                        </tr>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -2008,15 +2139,18 @@
             <div class="modal-body" style="display:flex;flex-direction:column;gap:12px;">
                 <div>
                     <label class="field-label">Name</label>
-                    <input class="url-field" id="src-name" placeholder="e.g. Company Career Page" style="width:100%;margin-top:4px;">
+                    <input class="url-field" id="src-name" placeholder="e.g. Company Career Page"
+                        style="width:100%;margin-top:4px;">
                 </div>
                 <div>
                     <label class="field-label">URL</label>
-                    <input class="url-field" id="src-url" type="url" placeholder="https://company.com/careers" style="width:100%;margin-top:4px;">
+                    <input class="url-field" id="src-url" type="url" placeholder="https://company.com/careers"
+                        style="width:100%;margin-top:4px;">
                 </div>
                 <div>
                     <label class="field-label">Type</label>
-                    <select id="src-type" style="width:100%;background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-sm);padding:10px 12px;color:var(--text);margin-top:4px;">
+                    <select id="src-type"
+                        style="width:100%;background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-sm);padding:10px 12px;color:var(--text);margin-top:4px;">
                         <option value="job_board">Job Board</option>
                         <option value="procurement">Procurement Portal</option>
                         <option value="news">News / Funding</option>
@@ -2024,11 +2158,13 @@
                 </div>
                 <div>
                     <label class="field-label">Keywords (comma-separated)</label>
-                    <input class="url-field" id="src-keywords" placeholder="e.g. Python, data engineer, cloud" style="width:100%;margin-top:4px;">
+                    <input class="url-field" id="src-keywords" placeholder="e.g. Python, data engineer, cloud"
+                        style="width:100%;margin-top:4px;">
                 </div>
                 <div>
                     <label class="field-label">Scan Interval (hours)</label>
-                    <input type="number" id="src-interval" value="24" min="1" style="background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-sm);padding:10px 12px;color:var(--text);width:120px;margin-top:4px;">
+                    <input type="number" id="src-interval" value="24" min="1"
+                        style="background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-sm);padding:10px 12px;color:var(--text);width:120px;margin-top:4px;">
                 </div>
             </div>
             <div class="modal-footer">
@@ -2053,12 +2189,12 @@
         /* ─── Sidebar Toggle ──────────────────────────────────────── */
         function toggleSidebar() {
             const sidebar = document.querySelector('.sidebar');
-            const shell   = document.querySelector('.shell');
-            const btn     = document.getElementById('sb-toggle-btn');
+            const shell = document.querySelector('.shell');
+            const btn = document.getElementById('sb-toggle-btn');
             const collapsed = sidebar.classList.toggle('collapsed');
             shell.classList.toggle('sidebar-collapsed', collapsed);
-            btn.innerHTML  = collapsed ? '&#8250;' : '&#8249;';
-            btn.title      = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+            btn.innerHTML = collapsed ? '&#8250;' : '&#8249;';
+            btn.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
             btn.style.left = collapsed ? '44px' : '218px';
         }
 
@@ -2070,13 +2206,13 @@
             document.getElementById('nav-' + name).classList.add('active');
 
             const labels = {
-                email:         ['Cold Email Generator', 'Generator'],
-                history:       ['Email History', 'Tracking'],
-                portfolio:     ['Portfolio Manager', 'Admin'],
-                signals:       ['Signal Classifier', 'Signals'],
+                email: ['Cold Email Generator', 'Generator'],
+                history: ['Email History', 'Tracking'],
+                portfolio: ['Portfolio Manager', 'Admin'],
+                signals: ['Signal Classifier', 'Signals'],
                 opportunities: ['Opportunity Pipeline', 'Pipeline'],
-                proposals:     ['Proposal Generator', 'Proposals'],
-                discovery:     ['Lead Discovery', 'Discovery'],
+                proposals: ['Proposal Generator', 'Proposals'],
+                discovery: ['Lead Discovery', 'Discovery'],
             };
             document.getElementById('topbar-title').textContent = labels[name][0];
             document.getElementById('page-badge').textContent = labels[name][1];
@@ -2085,12 +2221,12 @@
             document.getElementById('sync-badge').style.display = isPortfolio ? 'inline-flex' : 'none';
             document.getElementById('add-portfolio-btn').style.display = isPortfolio ? 'inline-flex' : 'none';
 
-            if (name === 'portfolio')     { loadAdminStats(); loadPortfolios(); }
-            if (name === 'history')       { loadEmailStats(); loadEmails(); }
-            if (name === 'signals')       { loadSignals(); }
+            if (name === 'portfolio') { loadAdminStats(); loadPortfolios(); }
+            if (name === 'history') { loadEmailStats(); loadEmails(); }
+            if (name === 'signals') { loadSignals(); }
             if (name === 'opportunities') { loadOppStats(); loadOpportunities(); }
-            if (name === 'proposals')     { loadProposals(); }
-            if (name === 'discovery')     { loadDiscoverySources(); }
+            if (name === 'proposals') { loadProposals(); }
+            if (name === 'discovery') { loadDiscoverySources(); initSearchCard(); }
         }
 
         /* poll notification badge on load + every 30 s */
@@ -2313,7 +2449,7 @@
 
             const payload = { job_url: jobUrl };
             if (companyUrl) {
-                try { new URL(companyUrl); payload.company_url = companyUrl; } catch {}
+                try { new URL(companyUrl); payload.company_url = companyUrl; } catch { }
             }
 
             try {
@@ -2741,7 +2877,7 @@
                 document.getElementById('opp-high').textContent = d.high_priority ?? '—';
                 document.getElementById('opp-email').textContent = d.email_sent ?? '—';
                 document.getElementById('opp-prop').textContent = d.proposals ?? '—';
-            } catch {}
+            } catch { }
         }
 
         async function loadOppStatsBadge() {
@@ -2749,7 +2885,7 @@
                 const d = await apiFetch('GET', '/api/opportunities/stats/dashboard');
                 const badge = document.getElementById('opps-badge');
                 if (d.high_priority > 0) { badge.textContent = d.high_priority; badge.style.display = ''; }
-            } catch {}
+            } catch { }
         }
 
         async function loadOpportunities() {
@@ -2773,12 +2909,12 @@
                     <td style="padding:10px 12px;font-size:12px;font-weight:600;color:${pColors[o.priority]};">${o.priority.toUpperCase()}</td>
                     <td style="padding:10px 12px;">
                         <select style="background:var(--raised);border:1px solid var(--border2);border-radius:6px;padding:4px 8px;color:var(--text);font-size:12px;" onchange="updateOppStatus(${o.id}, this.value)">
-                            ${['new','email_sent','rfp_requested','rfp_received','proposal_sent','closed'].map(s => `<option value="${s}" ${s===o.status?'selected':''}>${s.replace('_',' ')}</option>`).join('')}
+                            ${['new', 'email_sent', 'rfp_requested', 'rfp_received', 'proposal_sent', 'closed'].map(s => `<option value="${s}" ${s === o.status ? 'selected' : ''}>${s.replace('_', ' ')}</option>`).join('')}
                         </select>
                     </td>
                     <td style="padding:10px 12px;font-size:12px;color:var(--sub);">${o.created_at ? new Date(o.created_at).toLocaleDateString() : '—'}</td>
                     <td style="padding:10px 12px;">
-                        ${o.opportunity_type === 'proposal' ? `<button class="btn btn-ghost btn-sm" onclick="showPage('proposals')">+ Proposal</button>` : `<button class="btn btn-ghost btn-sm" onclick="document.getElementById('jobUrl').value='${esc(o.source_url||'')}';showPage('email')">Gen Email</button>`}
+                        ${o.opportunity_type === 'proposal' ? `<button class="btn btn-ghost btn-sm" onclick="showPage('proposals')">+ Proposal</button>` : `<button class="btn btn-ghost btn-sm" onclick="document.getElementById('jobUrl').value='${esc(o.source_url || '')}';showPage('email')">Gen Email</button>`}
                     </td>
                 </tr>`).join('');
             } catch (e) { tbody.innerHTML = `<tr><td colspan="7" style="padding:16px;color:var(--red);">Error: ${esc(e.message)}</td></tr>`; }
@@ -2816,7 +2952,7 @@
                     }
                 }
                 _lastNotifCount = count;
-            } catch {}
+            } catch { }
         }
 
         function toggleNotifPanel() {
@@ -2833,7 +2969,7 @@
 
         function _closeNotifOutside(e) {
             const panel = document.getElementById('notif-panel');
-            const bell  = document.getElementById('notif-bell');
+            const bell = document.getElementById('notif-bell');
             if (!panel.contains(e.target) && !bell.contains(e.target)) {
                 panel.classList.remove('open');
             }
@@ -2851,10 +2987,10 @@
                 }
                 body.innerHTML = notifs.map(n => {
                     const date = new Date(n.created_at).toLocaleString();
-                    const cls  = n.is_read ? 'read' : 'unread';
+                    const cls = n.is_read ? 'read' : 'unread';
                     return `<div class="notif-item ${cls}" onclick="markNotifRead(${n.id}, this)">
                         <div class="notif-item-title">${n.title}</div>
-                        <div class="notif-item-msg">${n.message.replace(/\n/g,'&#10;')}</div>
+                        <div class="notif-item-msg">${n.message.replace(/\n/g, '&#10;')}</div>
                         <div class="notif-item-meta">${date}${n.email_sent ? ' · ✉ email sent' : ''}</div>
                     </div>`;
                 }).join('');
@@ -2869,7 +3005,7 @@
                 el.classList.remove('unread');
                 el.classList.add('read');
                 updateNotifBadge();
-            } catch {}
+            } catch { }
         }
 
         async function markAllRead() {
@@ -2981,7 +3117,7 @@
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                         <h3 style="font-family:var(--serif);font-size:1.3rem;">📄 ${esc(p.rfp_filename || 'Proposal')}</h3>
                         <select style="background:var(--bg);border:1px solid var(--border2);border-radius:6px;padding:6px 10px;color:var(--text);" onchange="updateProposalStatus(${p.id}, this.value)">
-                            ${['draft','reviewed','sent'].map(s => `<option value="${s}" ${s===p.status?'selected':''}>${s}</option>`).join('')}
+                            ${['draft', 'reviewed', 'sent'].map(s => `<option value="${s}" ${s === p.status ? 'selected' : ''}>${s}</option>`).join('')}
                         </select>
                     </div>
                     ${sections || '<p style="color:var(--sub);">No proposal content generated.</p>'}
@@ -3073,6 +3209,99 @@
                 await fetch(`/api/discovery/sources/${id}`, { method: 'DELETE', headers: { 'Authorization': 'Basic ' + CREDS } });
                 loadDiscoverySources(); toast('Source deleted', 'success');
             } catch (e) { toast('Delete failed: ' + e.message, 'error'); }
+        }
+
+        /* ── Global Search ──────────────────────────────────────────── */
+
+        const DEFAULT_SEARCH_KEYWORDS = [
+            "Request for Proposal data engineering",
+            "hiring senior cloud engineer",
+            "IT services vendor RFP",
+            "Python AWS Snowflake hiring",
+            "cloud data platform procurement"
+        ];
+
+        function initSearchCard() {
+            // Populate keywords textarea from localStorage or defaults
+            const saved = localStorage.getItem('search_keywords');
+            const kw = saved ? JSON.parse(saved) : DEFAULT_SEARCH_KEYWORDS;
+            document.getElementById('search-keywords-input').value = kw.join('\n');
+
+            // Show search enabled badge (always on since backend controls it via .env)
+            const badge = document.getElementById('search-status-badge');
+            badge.textContent = '● Enabled';
+            badge.style.background = 'rgba(76,175,80,.15)';
+            badge.style.color = 'var(--green)';
+
+            // Populate SMTP config display
+            const smtpEl = document.getElementById('smtp-config-display');
+            smtpEl.innerHTML =
+                `<div>Host: smtp.gmail.com:587</div>` +
+                `<div style="margin-top:3px;">Recipients: configured in .env → MARKETING_EMAIL</div>` +
+                `<div style="margin-top:3px;">Triggers: RFP Opportunity &amp; Service Request signals</div>`;
+        }
+
+        function saveSearchKeywords() {
+            const raw = document.getElementById('search-keywords-input').value;
+            const kw = raw.split('\n').map(k => k.trim()).filter(Boolean);
+            if (!kw.length) { toast('Enter at least one keyword', 'error'); return; }
+            localStorage.setItem('search_keywords', JSON.stringify(kw));
+            toast('Keywords saved locally ✓  (update SEARCH_KEYWORDS in .env to persist across restarts)', 'success');
+        }
+
+        async function runGlobalSearch() {
+            const btn = document.getElementById('search-now-btn');
+            const msgEl = document.getElementById('search-result-msg');
+            btn.disabled = true;
+            btn.textContent = '⏳ Searching…';
+            msgEl.style.display = 'none';
+            try {
+                await apiFetch('POST', '/api/discovery/search-now');
+                msgEl.style.display = 'block';
+                msgEl.style.color = 'var(--green)';
+                msgEl.textContent = '✓ Search started — new signals will appear in the Signals tab within 30–60 seconds.';
+                toast('Global search started ✓', 'success');
+            } catch (e) {
+                msgEl.style.display = 'block';
+                msgEl.style.color = 'var(--red)';
+                msgEl.textContent = '✗ ' + e.message;
+                toast('Search failed: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🔍 Search Now';
+            }
+        }
+
+        /* ── Email Test ──────────────────────────────────────────────── */
+
+        async function testEmailConfig() {
+            const btn = document.getElementById('test-email-btn');
+            const resultEl = document.getElementById('email-test-result');
+            const badge = document.getElementById('smtp-status-badge');
+            btn.disabled = true;
+            btn.textContent = '⏳ Sending…';
+            resultEl.style.display = 'none';
+            try {
+                const data = await apiFetch('POST', '/api/admin/test-email');
+                resultEl.style.display = 'block';
+                resultEl.style.color = 'var(--green)';
+                resultEl.textContent = '✓ ' + data.message;
+                badge.textContent = '✓ Working';
+                badge.style.background = 'rgba(76,175,80,.15)';
+                badge.style.color = 'var(--green)';
+                toast('Test email sent ✓', 'success');
+            } catch (e) {
+                resultEl.style.display = 'block';
+                resultEl.style.color = 'var(--red)';
+                resultEl.textContent = '✗ ' + e.message;
+                badge.textContent = '✗ Failed';
+                badge.style.background = 'rgba(239,68,68,.12)';
+                badge.style.color = 'var(--red)';
+                toast('Email test failed', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '📨 Send Test Email';
+            }
         }
 
         /* ─── Generic API helper (non-admin prefix) ─────────────────── */

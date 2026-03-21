@@ -8,3 +8,4 @@ __pycache__/
 *.log
 /chroma_db/
 /portfolio.db
+/venv/

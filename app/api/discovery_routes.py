@@ -189,6 +189,29 @@ def _run_scan(source_id: int):
         db.close()
 
 
+# ── Global Search Trigger ──────────────────────────────────────────────────────
+
+@router.post("/discovery/search-now")
+async def run_global_search_now(
+    background_tasks: BackgroundTasks,
+    _: str = Depends(verify_admin),
+):
+    """Manually trigger a DuckDuckGo global search (runs in background)."""
+    background_tasks.add_task(_run_global_search)
+    return {"message": "Global search started — check Signals tab in a moment"}
+
+
+def _run_global_search():
+    """Background task: run DuckDuckGo global search."""
+    from app.services.lead_discovery import get_lead_discovery_agent
+    try:
+        agent = get_lead_discovery_agent()
+        agent.run_global_search()
+        logger.info("[Discovery] Manual global search completed")
+    except Exception as e:
+        logger.error(f"[Discovery] Manual global search failed: {e}")
+
+
 # ── Stats ──────────────────────────────────────────────────────────────────────
 
 @router.get("/discovery/stats")

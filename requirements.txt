@@ -34,3 +34,6 @@ python-docx==1.1.0
 
 # Phase 6: Background lead discovery scheduler
 apscheduler==3.10.4
+
+# Phase 6+: DuckDuckGo search-based lead discovery
+duckduckgo-search>=6.0

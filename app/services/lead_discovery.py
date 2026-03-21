@@ -27,7 +27,7 @@ class LeadDiscoveryAgent:
     """Scrapes configured sources and feeds discovered signals into the classification pipeline."""
 
     def run_all_sources(self):
-        """Scan all active discovery sources. Called by APScheduler."""
+        """Scan all active discovery sources + run global search. Called by APScheduler."""
         from app.database import SessionLocal
         from app.models import DiscoverySource
 
@@ -44,6 +44,56 @@ class LeadDiscoveryAgent:
                     logger.error(f"[Discovery] Source '{source.name}' scan failed: {e}")
         finally:
             db.close()
+
+        # Also run global DuckDuckGo search alongside configured sources
+        try:
+            self.run_global_search()
+        except Exception as e:
+            logger.error(f"[Discovery] Global search failed: {e}")
+
+    def run_global_search(self):
+        """Search DuckDuckGo with configured keywords and process results as signals."""
+        from app.config import get_settings
+        from app.database import SessionLocal
+
+        settings = get_settings()
+        if not settings.SEARCH_ENABLED:
+            logger.info("[Search] Global search is disabled (SEARCH_ENABLED=False)")
+            return
+
+        keywords = [k.strip() for k in settings.SEARCH_KEYWORDS.split(",") if k.strip()]
+        if not keywords:
+            logger.info("[Search] No search keywords configured, skipping")
+            return
+
+        logger.info(f"[Search] Running DuckDuckGo search for {len(keywords)} keyword(s)")
+
+        try:
+            from duckduckgo_search import DDGS
+        except ImportError:
+            logger.warning("[Search] duckduckgo-search not installed — run: pip install duckduckgo-search>=6.0")
+            return
+
+        db = SessionLocal()
+        signals_created = 0
+        try:
+            for query in keywords:
+                try:
+                    with DDGS() as ddgs:
+                        results = list(ddgs.text(query, max_results=settings.SEARCH_MAX_RESULTS))
+                    for result in results:
+                        snippet = f"{result.get('title', '')}. {result.get('body', '')}".strip()
+                        source_url = result.get('href', '')
+                        if len(snippet) > 60:
+                            created = self._process_snippet(snippet, source_url, db)
+                            if created:
+                                signals_created += 1
+                except Exception as e:
+                    logger.warning(f"[Search] Query '{query}' failed: {e}")
+        finally:
+            db.close()
+
+        logger.info(f"[Search] Global search created {signals_created} new signal(s)")
 
     def scan_source(self, source, db) -> int:
         """

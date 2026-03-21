@@ -49,6 +49,17 @@ class Settings(BaseSettings):
     DISCOVERY_ENABLED: bool = False
     DISCOVERY_INTERVAL_HOURS: int = 24
 
+    # ── Phase 6+: Global Search (DuckDuckGo) ───────────────────────────────────
+    SEARCH_ENABLED: bool = False
+    SEARCH_KEYWORDS: str = (
+        "Request for Proposal data engineering,"
+        "hiring senior cloud engineer,"
+        "IT services vendor RFP,"
+        "Python AWS Snowflake hiring,"
+        "cloud data platform procurement"
+    )
+    SEARCH_MAX_RESULTS: int = 10
+
     class Config:
         env_file = ".env"
         case_sensitive = True
