@@ -118,11 +118,12 @@ async def generate_email(request: EmailGenerationRequest):
             top_k=3
         )
         
-        # Step 3: Generate email
+        # Step 3: Generate email (with optional company personalization)
         logger.info("Step 3: Generating email")
         email_content = email_generator.generate_complete_email(
             job_details=job_details,
-            portfolio_matches=portfolio_matches
+            portfolio_matches=portfolio_matches,
+            company_url=str(request.company_url) if request.company_url else None
         )
         
         processing_time = time.time() - start_time

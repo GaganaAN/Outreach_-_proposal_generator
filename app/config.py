@@ -29,13 +29,25 @@ class Settings(BaseSettings):
 
     # Application
     APP_NAME: str = "Cold Email Generator"
-    APP_VERSION: str = "1.0.0"
+    APP_VERSION: str = "2.0.0"
     DEBUG: bool = True
     PORT: int = 8000
 
     # Company Information
     COMPANY_NAME: str = "Ivoyant Systems Pvt Ltd"
     COMPANY_WEBSITE: str = "https://www.ivoyant.com"
+
+    # ── Phase 3: SMTP / Marketing Notifications ────────────────────────────────
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_EMAIL: str = ""
+    MARKETING_EMAIL: str = ""   # where opportunity alerts are sent
+
+    # ── Phase 6: Lead Discovery Agent ──────────────────────────────────────────
+    DISCOVERY_ENABLED: bool = False
+    DISCOVERY_INTERVAL_HOURS: int = 24
 
     class Config:
         env_file = ".env"

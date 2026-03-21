@@ -74,7 +74,68 @@
             top: 0;
             left: 0;
             z-index: 200;
+            transition: width .2s ease, transform .2s ease;
+            overflow: hidden;
         }
+
+        .sidebar.collapsed {
+            width: 56px;
+        }
+
+        .sidebar.collapsed .sb-tagline,
+        .sidebar.collapsed .sb-section-lbl,
+        .sidebar.collapsed .sb-footer,
+        .sidebar.collapsed .sb-wordmark,
+        .sidebar.collapsed [id$="-badge"] {
+            display: none;
+        }
+
+        .sidebar.collapsed .nav-item {
+            justify-content: center;
+            padding: 10px;
+            font-size: 0;        /* hide text nodes */
+        }
+
+        .sidebar.collapsed .nav-item .ni {
+            font-size: .95rem;   /* restore icon */
+        }
+
+        .sidebar.collapsed .sb-brand {
+            padding: 16px 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        .sidebar.collapsed .sb-section {
+            padding: 10px 6px 4px;
+        }
+
+        .shell.sidebar-collapsed {
+            margin-left: 56px;
+        }
+
+        .sb-toggle {
+            position: fixed;
+            top: 16px;
+            left: 218px;
+            width: 24px;
+            height: 24px;
+            background: var(--surface);
+            border: 1px solid var(--border2);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: var(--sub);
+            z-index: 300;
+            transition: left .2s ease;
+            line-height: 1;
+            padding: 0;
+        }
+
+        .sb-toggle:hover { background: var(--raised); color: var(--text); }
 
         .sb-brand {
             padding: 28px 24px 20px;
@@ -170,6 +231,7 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+            transition: margin-left .2s ease;
         }
 
         /* ─── Topbar ─────────────────────────────────────────────── */
@@ -262,6 +324,7 @@
         .page {
             display: none;
             flex: 1;
+            overflow-y: auto;
         }
 
         .page.active {
@@ -1065,6 +1128,124 @@
             font-size: .88rem;
         }
 
+        /* ─── Notification Bell ──────────────────────────────────── */
+        .notif-btn {
+            position: relative;
+            background: none;
+            border: 1px solid var(--border2);
+            border-radius: var(--r-sm);
+            color: var(--sub);
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            transition: all .15s ease;
+        }
+        .notif-btn:hover { background: var(--raised); color: var(--text); }
+        .notif-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--red);
+            color: #fff;
+            font-size: 9px;
+            font-weight: 700;
+            font-family: var(--mono);
+            min-width: 16px;
+            height: 16px;
+            border-radius: 8px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 0 3px;
+            line-height: 1;
+        }
+
+        /* ─── Notification Panel ─────────────────────────────────── */
+        .notif-panel {
+            position: fixed;
+            top: 64px;
+            right: 24px;
+            width: 380px;
+            max-height: 480px;
+            background: var(--surface);
+            border: 1px solid var(--border2);
+            border-radius: var(--r-lg);
+            box-shadow: 0 16px 48px rgba(0,0,0,.6);
+            z-index: 500;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .notif-panel.open { display: flex; }
+        .notif-panel-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .notif-panel-head h4 {
+            font-size: .85rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .notif-panel-body {
+            overflow-y: auto;
+            flex: 1;
+        }
+        .notif-item {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background .12s;
+        }
+        .notif-item:hover { background: var(--raised); }
+        .notif-item.unread { border-left: 3px solid var(--amber); }
+        .notif-item.read   { border-left: 3px solid transparent; opacity: .7; }
+        .notif-item-title {
+            font-size: .83rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+        .notif-item-meta {
+            font-size: .75rem;
+            color: var(--sub);
+            font-family: var(--mono);
+        }
+        .notif-item-msg {
+            font-size: .78rem;
+            color: var(--sub);
+            margin-top: 4px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .notif-empty {
+            padding: 40px;
+            text-align: center;
+            color: var(--dim);
+            font-size: .83rem;
+        }
+        .notif-panel-foot {
+            padding: 10px 18px;
+            border-top: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        /* ─── Toast (alert type) ─────────────────────────────────── */
+        .toast.alert {
+            border-left: 3px solid var(--amber);
+        }
+
         /* ─── Toast ──────────────────────────────────────────────── */
         .toast-wrap {
             position: fixed;
@@ -1210,6 +1391,17 @@
             <button class="nav-item active" id="nav-email" onclick="showPage('email')">
                 <span class="ni">✉️</span> Email Generator
             </button>
+            <button class="nav-item" id="nav-signals" onclick="showPage('signals')">
+                <span class="ni">📡</span> Signals
+                <span id="signals-badge" style="margin-left:auto;background:#4f8eff;color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;display:none"></span>
+            </button>
+            <button class="nav-item" id="nav-opportunities" onclick="showPage('opportunities')">
+                <span class="ni">🎯</span> Opportunities
+                <span id="opps-badge" style="margin-left:auto;background:#f0a030;color:#080b12;font-size:10px;padding:1px 6px;border-radius:10px;display:none"></span>
+            </button>
+            <button class="nav-item" id="nav-proposals" onclick="showPage('proposals')">
+                <span class="ni">📄</span> Proposals
+            </button>
         </div>
 
         <button class="nav-item" id="nav-history" onclick="showPage('history')">
@@ -1221,13 +1413,17 @@
             <button class="nav-item" id="nav-portfolio" onclick="showPage('portfolio')">
                 <span class="ni">📦</span> Portfolio Manager
             </button>
+            <button class="nav-item" id="nav-discovery" onclick="showPage('discovery')">
+                <span class="ni">🔍</span> Lead Discovery
+            </button>
         </div>
 
         <div class="sb-spacer"></div>
         <div class="sb-footer">
-            v1.0.0<br>Ivoyant Systems Pvt Ltd
+            v2.0.0<br>Ivoyant Systems Pvt Ltd
         </div>
     </nav>
+    <button class="sb-toggle" id="sb-toggle-btn" onclick="toggleSidebar()" title="Collapse sidebar">&#8249;</button>
 
     <!-- ══ SHELL ════════════════════════════════════════════════ -->
     <div class="shell">
@@ -1247,6 +1443,25 @@
                     onclick="openAddModal()">
                     + Add Entry
                 </button>
+                <!-- Notification Bell -->
+                <button class="notif-btn" id="notif-bell" onclick="toggleNotifPanel()" title="Notifications">
+                    🔔
+                    <span class="notif-badge" id="notif-badge"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Notification Panel (positioned relative to topbar) -->
+        <div class="notif-panel" id="notif-panel">
+            <div class="notif-panel-head">
+                <h4>Notifications</h4>
+                <button class="btn btn-ghost btn-sm" onclick="markAllRead()" style="font-size:11px;padding:4px 10px;">Mark all read</button>
+            </div>
+            <div class="notif-panel-body" id="notif-panel-body">
+                <div class="notif-empty">Loading…</div>
+            </div>
+            <div class="notif-panel-foot">
+                <button class="btn btn-ghost btn-sm" style="width:100%;font-size:12px;" onclick="toggleNotifPanel()">Close</button>
             </div>
         </div>
 
@@ -1269,6 +1484,9 @@
                             <span id="gen-btn-text">✨ Generate</span>
                         </button>
                     </div>
+                    <label class="field-label" style="margin-top:10px;">Company Website <span style="color:var(--sub);font-weight:400;">(optional — for AI personalization)</span></label>
+                    <input class="url-field" id="companyUrl" type="url"
+                        placeholder="https://www.company.com" style="width:100%;margin-top:4px;">
                     <div class="error-msg" id="error-msg"></div>
                 </div>
 
@@ -1495,6 +1713,130 @@
             </div><!-- /admin-page -->
         </div>
 
+        <!-- ══ SIGNALS PAGE ═══════════════════════════════════════ -->
+        <div class="page" id="page-signals">
+            <div style="padding:40px;max-width:1100px;">
+                <h2 style="font-family:var(--serif);font-size:1.8rem;margin-bottom:6px;">Signal <em>Classifier</em></h2>
+                <p style="color:var(--sub);margin-bottom:24px;">Paste a job posting URL or any text to classify it and route it to the right workflow.</p>
+
+                <div class="input-card" style="margin-bottom:24px;">
+                    <label class="field-label">URL or Text to Classify</label>
+                    <textarea id="signalInput" rows="4" style="width:100%;background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-sm);padding:12px;color:var(--text);font-family:var(--sans);font-size:14px;resize:vertical;margin-top:6px;" placeholder="https://jobs.company.com/role  OR paste any job description / RFP notice text..."></textarea>
+                    <button class="btn btn-lime" style="margin-top:12px;" onclick="classifySignal()">📡 Classify Signal</button>
+                    <div id="signal-result" style="margin-top:16px;display:none;"></div>
+                </div>
+
+                <h3 style="font-size:1rem;font-weight:600;margin-bottom:12px;color:var(--sub);">Recent Signals</h3>
+                <div id="signals-table-wrap">
+                    <table style="width:100%;border-collapse:collapse;">
+                        <thead><tr style="color:var(--sub);font-size:12px;text-transform:uppercase;letter-spacing:.05em;">
+                            <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Type</th>
+                            <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Company</th>
+                            <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Skills</th>
+                            <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Confidence</th>
+                            <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Date</th>
+                            <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Status</th>
+                        </tr></thead>
+                        <tbody id="signals-tbody"><tr><td colspan="6" style="padding:32px;text-align:center;color:var(--sub);">Loading signals…</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ OPPORTUNITIES PAGE ══════════════════════════════════ -->
+        <div class="page" id="page-opportunities">
+            <div style="padding:40px;max-width:1100px;">
+                <h2 style="font-family:var(--serif);font-size:1.8rem;margin-bottom:6px;">Opportunity <em>Pipeline</em></h2>
+                <p style="color:var(--sub);margin-bottom:24px;">Track scored sales opportunities detected from signals.</p>
+
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;" id="opp-stats-grid">
+                    <div class="stat-card"><div class="stat-num" id="opp-total">—</div><div class="stat-lbl">Total</div></div>
+                    <div class="stat-card"><div class="stat-num" style="color:var(--red)" id="opp-high">—</div><div class="stat-lbl">High Priority</div></div>
+                    <div class="stat-card"><div class="stat-num" style="color:var(--blue)" id="opp-email">—</div><div class="stat-lbl">Email Sent</div></div>
+                    <div class="stat-card"><div class="stat-num" style="color:var(--green)" id="opp-prop">—</div><div class="stat-lbl">Proposals</div></div>
+                </div>
+
+                <div style="margin-bottom:12px;display:flex;gap:10px;flex-wrap:wrap;">
+                    <select id="opp-filter-status" onchange="loadOpportunities()" style="background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-sm);padding:8px 12px;color:var(--text);font-size:13px;">
+                        <option value="">All Statuses</option>
+                        <option value="new">New</option>
+                        <option value="email_sent">Email Sent</option>
+                        <option value="rfp_requested">RFP Requested</option>
+                        <option value="rfp_received">RFP Received</option>
+                        <option value="proposal_sent">Proposal Sent</option>
+                        <option value="closed">Closed</option>
+                    </select>
+                    <select id="opp-filter-priority" onchange="loadOpportunities()" style="background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-sm);padding:8px 12px;color:var(--text);font-size:13px;">
+                        <option value="">All Priorities</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                </div>
+
+                <table style="width:100%;border-collapse:collapse;">
+                    <thead><tr style="color:var(--sub);font-size:12px;text-transform:uppercase;letter-spacing:.05em;">
+                        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Company</th>
+                        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Type</th>
+                        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Score</th>
+                        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Priority</th>
+                        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Status</th>
+                        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Date</th>
+                        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Action</th>
+                    </tr></thead>
+                    <tbody id="opps-tbody"><tr><td colspan="7" style="padding:32px;text-align:center;color:var(--sub);">Loading opportunities…</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ══ PROPOSALS PAGE ═════════════════════════════════════ -->
+        <div class="page" id="page-proposals">
+            <div style="padding:40px;max-width:960px;">
+                <h2 style="font-family:var(--serif);font-size:1.8rem;margin-bottom:6px;">Proposal <em>Generator</em></h2>
+                <p style="color:var(--sub);margin-bottom:24px;">Upload an RFP document (PDF, DOCX, or TXT) to auto-generate a technical proposal.</p>
+
+                <div class="input-card" style="margin-bottom:28px;">
+                    <label class="field-label">RFP Document</label>
+                    <input type="file" id="rfpFile" accept=".pdf,.docx,.txt,.md" style="margin-top:8px;color:var(--text);">
+                    <label class="field-label" style="margin-top:12px;">Linked Opportunity ID <span style="color:var(--sub);font-weight:400;">(optional)</span></label>
+                    <input type="number" id="rfpOppId" placeholder="e.g. 42" style="background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-sm);padding:10px 12px;color:var(--text);font-size:14px;width:200px;margin-top:6px;">
+                    <div style="margin-top:14px;">
+                        <button class="btn btn-lime" onclick="uploadRFP()">📄 Generate Proposal</button>
+                    </div>
+                    <div id="rfp-progress" style="display:none;margin-top:10px;color:var(--sub);font-size:13px;">⏳ Processing RFP and generating proposal…</div>
+                </div>
+
+                <h3 style="font-size:1rem;font-weight:600;margin-bottom:12px;color:var(--sub);">Generated Proposals</h3>
+                <div id="proposals-list"><p style="color:var(--sub);">Loading…</p></div>
+
+                <div id="proposal-detail" style="display:none;margin-top:24px;"></div>
+            </div>
+        </div>
+
+        <!-- ══ DISCOVERY PAGE ═════════════════════════════════════ -->
+        <div class="page" id="page-discovery">
+            <div style="padding:40px;max-width:1100px;">
+                <h2 style="font-family:var(--serif);font-size:1.8rem;margin-bottom:6px;">Lead <em>Discovery</em></h2>
+                <p style="color:var(--sub);margin-bottom:24px;">Configure sources for the automated background scanner. The agent will periodically scrape these URLs and classify signals automatically.</p>
+
+                <div style="margin-bottom:20px;">
+                    <button class="btn btn-lime" onclick="openAddSourceModal()">+ Add Source</button>
+                </div>
+
+                <table style="width:100%;border-collapse:collapse;">
+                    <thead><tr style="color:var(--sub);font-size:12px;text-transform:uppercase;letter-spacing:.05em;">
+                        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Name</th>
+                        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Type</th>
+                        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">URL</th>
+                        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Active</th>
+                        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Last Scanned</th>
+                        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Actions</th>
+                    </tr></thead>
+                    <tbody id="discovery-tbody"><tr><td colspan="6" style="padding:32px;text-align:center;color:var(--sub);">Loading sources…</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
     </div><!-- /shell -->
 
 
@@ -1656,6 +1998,46 @@
         </div>
     </div>
 
+    <!-- ══ ADD SOURCE MODAL ════════════════════════════════════ -->
+    <div class="overlay" id="add-source-overlay">
+        <div class="modal" style="width:500px">
+            <div class="modal-header">
+                <h3>Add Discovery Source</h3>
+                <button class="modal-close" onclick="closeModal('add-source-overlay')">×</button>
+            </div>
+            <div class="modal-body" style="display:flex;flex-direction:column;gap:12px;">
+                <div>
+                    <label class="field-label">Name</label>
+                    <input class="url-field" id="src-name" placeholder="e.g. Company Career Page" style="width:100%;margin-top:4px;">
+                </div>
+                <div>
+                    <label class="field-label">URL</label>
+                    <input class="url-field" id="src-url" type="url" placeholder="https://company.com/careers" style="width:100%;margin-top:4px;">
+                </div>
+                <div>
+                    <label class="field-label">Type</label>
+                    <select id="src-type" style="width:100%;background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-sm);padding:10px 12px;color:var(--text);margin-top:4px;">
+                        <option value="job_board">Job Board</option>
+                        <option value="procurement">Procurement Portal</option>
+                        <option value="news">News / Funding</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="field-label">Keywords (comma-separated)</label>
+                    <input class="url-field" id="src-keywords" placeholder="e.g. Python, data engineer, cloud" style="width:100%;margin-top:4px;">
+                </div>
+                <div>
+                    <label class="field-label">Scan Interval (hours)</label>
+                    <input type="number" id="src-interval" value="24" min="1" style="background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-sm);padding:10px 12px;color:var(--text);width:120px;margin-top:4px;">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('add-source-overlay')">Cancel</button>
+                <button class="btn btn-lime" onclick="saveDiscoverySource()">Save Source</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ══ TOASTS ════════════════════════════════════════════ -->
     <div class="toast-wrap" id="toast-wrap"></div>
 
@@ -1668,6 +2050,18 @@
         let allRows = [];
         let deleteId = null;
 
+        /* ─── Sidebar Toggle ──────────────────────────────────────── */
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const shell   = document.querySelector('.shell');
+            const btn     = document.getElementById('sb-toggle-btn');
+            const collapsed = sidebar.classList.toggle('collapsed');
+            shell.classList.toggle('sidebar-collapsed', collapsed);
+            btn.innerHTML  = collapsed ? '&#8250;' : '&#8249;';
+            btn.title      = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+            btn.style.left = collapsed ? '44px' : '218px';
+        }
+
         /* ─── Navigation ─────────────────────────────────────────── */
         function showPage(name) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -1675,17 +2069,36 @@
             document.getElementById('page-' + name).classList.add('active');
             document.getElementById('nav-' + name).classList.add('active');
 
-            const labels = { email: ['Cold Email Generator', 'Generator'], history: ['Email History', 'Tracking'], portfolio: ['Portfolio Manager', 'Admin'] };
+            const labels = {
+                email:         ['Cold Email Generator', 'Generator'],
+                history:       ['Email History', 'Tracking'],
+                portfolio:     ['Portfolio Manager', 'Admin'],
+                signals:       ['Signal Classifier', 'Signals'],
+                opportunities: ['Opportunity Pipeline', 'Pipeline'],
+                proposals:     ['Proposal Generator', 'Proposals'],
+                discovery:     ['Lead Discovery', 'Discovery'],
+            };
             document.getElementById('topbar-title').textContent = labels[name][0];
             document.getElementById('page-badge').textContent = labels[name][1];
 
-            const isAdmin = name === 'portfolio' || name === 'history';
-            document.getElementById('sync-badge').style.display = isAdmin ? 'inline-flex' : 'none';
-            document.getElementById('add-portfolio-btn').style.display = isAdmin ? 'inline-flex' : 'none';
+            const isPortfolio = name === 'portfolio';
+            document.getElementById('sync-badge').style.display = isPortfolio ? 'inline-flex' : 'none';
+            document.getElementById('add-portfolio-btn').style.display = isPortfolio ? 'inline-flex' : 'none';
 
-            if (name === 'portfolio') { loadAdminStats(); loadPortfolios(); }
-            if (name === 'history') { loadEmailStats(); loadEmails(); }
+            if (name === 'portfolio')     { loadAdminStats(); loadPortfolios(); }
+            if (name === 'history')       { loadEmailStats(); loadEmails(); }
+            if (name === 'signals')       { loadSignals(); }
+            if (name === 'opportunities') { loadOppStats(); loadOpportunities(); }
+            if (name === 'proposals')     { loadProposals(); }
+            if (name === 'discovery')     { loadDiscoverySources(); }
         }
+
+        /* poll notification badge on load + every 30 s */
+        window.addEventListener('load', () => {
+            updateNotifBadge();
+            loadOppStatsBadge();
+            setInterval(updateNotifBadge, 30000);
+        });
 
         /* ─── Admin API helper ───────────────────────────────────── */
         async function adminFetch(method, path, body) {
@@ -1883,6 +2296,7 @@
         /* ─── Email Generator ────────────────────────────────────── */
         async function generateEmail() {
             const jobUrl = document.getElementById('jobUrl').value.trim();
+            const companyUrl = document.getElementById('companyUrl').value.trim();
             const errMsg = document.getElementById('error-msg');
             const results = document.getElementById('results');
             const btn = document.getElementById('gen-btn');
@@ -1897,11 +2311,16 @@
             btn.disabled = true;
             btnText.innerHTML = '<span class="gen-spinner"></span> Generating…';
 
+            const payload = { job_url: jobUrl };
+            if (companyUrl) {
+                try { new URL(companyUrl); payload.company_url = companyUrl; } catch {}
+            }
+
             try {
                 const res = await fetch('/api/generate-email', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ job_url: jobUrl })
+                    body: JSON.stringify(payload)
                 });
 
                 if (!res.ok) {
@@ -2253,6 +2672,423 @@
             } catch (e) {
                 toast('Export failed: ' + e.message, 'error');
             }
+        }
+
+        /* ══════════════════════════════════════════════════════════════
+           PHASE 1 — SIGNAL CLASSIFIER
+        ══════════════════════════════════════════════════════════════ */
+
+        async function classifySignal() {
+            const input = document.getElementById('signalInput').value.trim();
+            if (!input) { toast('Please enter a URL or text', 'error'); return; }
+            const resultDiv = document.getElementById('signal-result');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<p style="color:var(--sub);">⏳ Classifying signal…</p>';
+            try {
+                const res = await fetch('/api/signals/classify', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ input })
+                });
+                if (!res.ok) throw new Error((await res.json()).detail || 'Classification failed');
+                const data = await res.json();
+                const sig = data.signal;
+                const colors = { job_hiring: 'var(--blue)', rfp_opportunity: 'var(--amber)', service_request: 'var(--green)', other: 'var(--dim)' };
+                const labels = { job_hiring: '✉️ Job Hiring', rfp_opportunity: '📋 RFP Opportunity', service_request: '🤝 Service Request', other: '—' };
+                resultDiv.innerHTML = `
+                    <div style="background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-md);padding:16px;margin-top:8px;">
+                        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+                            <span style="background:${colors[sig.signal_type]};color:var(--bg);padding:4px 12px;border-radius:20px;font-size:13px;font-weight:600;">${labels[sig.signal_type]}</span>
+                            <span style="color:var(--sub);font-size:13px;">Confidence: <strong style="color:var(--text);">${(sig.confidence_score * 100).toFixed(0)}%</strong></span>
+                            ${sig.company_name ? `<span style="color:var(--sub);font-size:13px;">Company: <strong style="color:var(--text);">${esc(sig.company_name)}</strong></span>` : ''}
+                        </div>
+                        ${sig.detected_skills?.length ? `<div style="margin-top:10px;font-size:13px;color:var(--sub);">Skills: <span style="color:var(--text);">${sig.detected_skills.map(s => esc(s)).join(', ')}</span></div>` : ''}
+                        <div style="margin-top:10px;font-size:13px;">Action: <code style="color:var(--lime);">${data.suggested_action}</code></div>
+                        ${data.opportunity ? `<div style="margin-top:6px;font-size:13px;color:var(--sub);">Opportunity created — Score: <strong style="color:var(--text);">${data.opportunity.overall_score}</strong>, Priority: <strong style="color:var(--amber);">${data.opportunity.priority.toUpperCase()}</strong></div>` : ''}
+                        ${data.notification_sent ? `<div style="margin-top:6px;font-size:12px;color:var(--green);">✓ Marketing team notified</div>` : ''}
+                    </div>`;
+                loadSignals(); toast('Signal classified ✓', 'success');
+            } catch (e) { resultDiv.innerHTML = `<p style="color:var(--red);">Error: ${esc(e.message)}</p>`; }
+        }
+
+        async function loadSignals() {
+            const tbody = document.getElementById('signals-tbody');
+            try {
+                const data = await apiFetch('GET', '/api/signals/?limit=30');
+                const signals = data.signals || [];
+                const badge = document.getElementById('signals-badge');
+                if (signals.length > 0) { badge.textContent = signals.length; badge.style.display = ''; }
+                if (!signals.length) { tbody.innerHTML = '<tr><td colspan="6" style="padding:32px;text-align:center;color:var(--sub);">No signals yet. Classify one above.</td></tr>'; return; }
+                const colors = { job_hiring: 'var(--blue)', rfp_opportunity: 'var(--amber)', service_request: 'var(--green)', other: 'var(--dim)' };
+                tbody.innerHTML = signals.map(s => `<tr style="border-bottom:1px solid var(--border);">
+                    <td style="padding:10px 12px;"><span style="background:${colors[s.signal_type]};color:var(--bg);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">${esc(s.signal_type)}</span></td>
+                    <td style="padding:10px 12px;font-size:13px;">${esc(s.company_name || '—')}</td>
+                    <td style="padding:10px 12px;font-size:12px;color:var(--sub);">${(s.detected_skills || []).slice(0, 3).map(x => esc(x)).join(', ') || '—'}</td>
+                    <td style="padding:10px 12px;font-size:13px;">${(s.confidence_score * 100).toFixed(0)}%</td>
+                    <td style="padding:10px 12px;font-size:12px;color:var(--sub);">${s.created_at ? new Date(s.created_at).toLocaleDateString() : '—'}</td>
+                    <td style="padding:10px 12px;font-size:12px;">${esc(s.status)}</td>
+                </tr>`).join('');
+            } catch (e) { tbody.innerHTML = `<tr><td colspan="6" style="padding:16px;color:var(--red);">Error: ${esc(e.message)}</td></tr>`; }
+        }
+
+        /* ══════════════════════════════════════════════════════════════
+           PHASE 2 — OPPORTUNITIES
+        ══════════════════════════════════════════════════════════════ */
+
+        async function loadOppStats() {
+            try {
+                const d = await apiFetch('GET', '/api/opportunities/stats/dashboard');
+                document.getElementById('opp-total').textContent = d.total ?? '—';
+                document.getElementById('opp-high').textContent = d.high_priority ?? '—';
+                document.getElementById('opp-email').textContent = d.email_sent ?? '—';
+                document.getElementById('opp-prop').textContent = d.proposals ?? '—';
+            } catch {}
+        }
+
+        async function loadOppStatsBadge() {
+            try {
+                const d = await apiFetch('GET', '/api/opportunities/stats/dashboard');
+                const badge = document.getElementById('opps-badge');
+                if (d.high_priority > 0) { badge.textContent = d.high_priority; badge.style.display = ''; }
+            } catch {}
+        }
+
+        async function loadOpportunities() {
+            const tbody = document.getElementById('opps-tbody');
+            const status = document.getElementById('opp-filter-status').value;
+            const priority = document.getElementById('opp-filter-priority').value;
+            let url = '/api/opportunities/?limit=50';
+            if (status) url += '&opp_status=' + status;
+            if (priority) url += '&priority=' + priority;
+            try {
+                const data = await apiFetch('GET', url);
+                const opps = data.opportunities || [];
+                if (!opps.length) { tbody.innerHTML = '<tr><td colspan="7" style="padding:32px;text-align:center;color:var(--sub);">No opportunities yet.</td></tr>'; return; }
+                const pColors = { high: 'var(--red)', medium: 'var(--amber)', low: 'var(--dim)' };
+                tbody.innerHTML = opps.map(o => `<tr style="border-bottom:1px solid var(--border);">
+                    <td style="padding:10px 12px;font-size:13px;font-weight:500;">${esc(o.company_name || '—')}</td>
+                    <td style="padding:10px 12px;font-size:12px;color:var(--sub);">${esc(o.opportunity_type)}</td>
+                    <td style="padding:10px 12px;">
+                        <span style="background:${o.overall_score >= 0.7 ? 'var(--green)' : o.overall_score >= 0.4 ? 'var(--amber)' : 'var(--dim)'};color:var(--bg);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">${(o.overall_score * 100).toFixed(0)}%</span>
+                    </td>
+                    <td style="padding:10px 12px;font-size:12px;font-weight:600;color:${pColors[o.priority]};">${o.priority.toUpperCase()}</td>
+                    <td style="padding:10px 12px;">
+                        <select style="background:var(--raised);border:1px solid var(--border2);border-radius:6px;padding:4px 8px;color:var(--text);font-size:12px;" onchange="updateOppStatus(${o.id}, this.value)">
+                            ${['new','email_sent','rfp_requested','rfp_received','proposal_sent','closed'].map(s => `<option value="${s}" ${s===o.status?'selected':''}>${s.replace('_',' ')}</option>`).join('')}
+                        </select>
+                    </td>
+                    <td style="padding:10px 12px;font-size:12px;color:var(--sub);">${o.created_at ? new Date(o.created_at).toLocaleDateString() : '—'}</td>
+                    <td style="padding:10px 12px;">
+                        ${o.opportunity_type === 'proposal' ? `<button class="btn btn-ghost btn-sm" onclick="showPage('proposals')">+ Proposal</button>` : `<button class="btn btn-ghost btn-sm" onclick="document.getElementById('jobUrl').value='${esc(o.source_url||'')}';showPage('email')">Gen Email</button>`}
+                    </td>
+                </tr>`).join('');
+            } catch (e) { tbody.innerHTML = `<tr><td colspan="7" style="padding:16px;color:var(--red);">Error: ${esc(e.message)}</td></tr>`; }
+        }
+
+        async function updateOppStatus(id, status) {
+            try {
+                await apiFetch('PUT', `/api/opportunities/${id}`, { status });
+                toast('Status updated ✓', 'success');
+            } catch (e) { toast('Update failed: ' + e.message, 'error'); }
+        }
+
+        /* ══════════════════════════════════════════════════════════════
+           NOTIFICATIONS
+        ══════════════════════════════════════════════════════════════ */
+        let _lastNotifCount = 0;
+
+        async function updateNotifBadge() {
+            try {
+                const data = await apiFetch('GET', '/api/notifications/?unread_only=true&limit=50');
+                const count = data.unread_count || 0;
+                const badge = document.getElementById('notif-badge');
+                if (count > 0) {
+                    badge.textContent = count > 9 ? '9+' : count;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+                /* Show toast pop-up for NEW notifications that just arrived */
+                if (count > _lastNotifCount && _lastNotifCount >= 0) {
+                    const diff = count - _lastNotifCount;
+                    const newest = data.notifications && data.notifications[0];
+                    if (newest) {
+                        toastAlert(`🔔 ${newest.title}`, newest.message.split('\n')[0]);
+                    }
+                }
+                _lastNotifCount = count;
+            } catch {}
+        }
+
+        function toggleNotifPanel() {
+            const panel = document.getElementById('notif-panel');
+            const isOpen = panel.classList.toggle('open');
+            if (isOpen) loadNotifPanel();
+            /* close when clicking outside */
+            if (isOpen) {
+                setTimeout(() => {
+                    document.addEventListener('click', _closeNotifOutside, { once: true });
+                }, 0);
+            }
+        }
+
+        function _closeNotifOutside(e) {
+            const panel = document.getElementById('notif-panel');
+            const bell  = document.getElementById('notif-bell');
+            if (!panel.contains(e.target) && !bell.contains(e.target)) {
+                panel.classList.remove('open');
+            }
+        }
+
+        async function loadNotifPanel() {
+            const body = document.getElementById('notif-panel-body');
+            body.innerHTML = '<div class="notif-empty">Loading…</div>';
+            try {
+                const data = await apiFetch('GET', '/api/notifications/?limit=30');
+                const notifs = data.notifications || [];
+                if (!notifs.length) {
+                    body.innerHTML = '<div class="notif-empty">No notifications yet.<br>They appear when RFP/service signals are detected.</div>';
+                    return;
+                }
+                body.innerHTML = notifs.map(n => {
+                    const date = new Date(n.created_at).toLocaleString();
+                    const cls  = n.is_read ? 'read' : 'unread';
+                    return `<div class="notif-item ${cls}" onclick="markNotifRead(${n.id}, this)">
+                        <div class="notif-item-title">${n.title}</div>
+                        <div class="notif-item-msg">${n.message.replace(/\n/g,'&#10;')}</div>
+                        <div class="notif-item-meta">${date}${n.email_sent ? ' · ✉ email sent' : ''}</div>
+                    </div>`;
+                }).join('');
+            } catch (e) {
+                body.innerHTML = `<div class="notif-empty" style="color:var(--red)">Error loading notifications</div>`;
+            }
+        }
+
+        async function markNotifRead(id, el) {
+            try {
+                await apiFetch('PUT', `/api/notifications/${id}/read`);
+                el.classList.remove('unread');
+                el.classList.add('read');
+                updateNotifBadge();
+            } catch {}
+        }
+
+        async function markAllRead() {
+            try {
+                await apiFetch('PUT', '/api/notifications/read-all');
+                document.getElementById('notif-badge').style.display = 'none';
+                _lastNotifCount = 0;
+                loadNotifPanel();
+                toast('All notifications marked as read', 'success');
+            } catch (e) { toast('Failed: ' + e.message, 'error'); }
+        }
+
+        /* Toast with an extra "alert" variant for notifications */
+        function toastAlert(title, subtitle) {
+            const el = document.createElement('div');
+            el.className = 'toast alert';
+            el.innerHTML = `<div><div style="font-weight:600;font-size:.84rem;">${title}</div>
+                <div style="font-size:.76rem;color:var(--sub);margin-top:2px;">${subtitle || ''}</div></div>`;
+            el.style.cursor = 'pointer';
+            el.onclick = () => { el.remove(); toggleNotifPanel(); };
+            document.getElementById('toast-wrap').appendChild(el);
+            setTimeout(() => el.remove(), 7000);
+        }
+
+        /* ══════════════════════════════════════════════════════════════
+           PHASE 5 — PROPOSALS
+        ══════════════════════════════════════════════════════════════ */
+
+        async function uploadRFP() {
+            const fileInput = document.getElementById('rfpFile');
+            const oppId = document.getElementById('rfpOppId').value.trim();
+            const progress = document.getElementById('rfp-progress');
+            if (!fileInput.files.length) { toast('Please select an RFP file', 'error'); return; }
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            if (oppId) formData.append('opportunity_id', oppId);
+            progress.style.display = 'block';
+            try {
+                const res = await fetch('/api/proposals/upload', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Basic ' + CREDS },
+                    body: formData
+                });
+                if (!res.ok) throw new Error((await res.json()).detail || 'Upload failed');
+                const data = await res.json();
+                progress.style.display = 'none';
+                showProposalDetail(data);
+                loadProposals();
+                toast('Proposal generated ✓', 'success');
+            } catch (e) {
+                progress.style.display = 'none';
+                toast('Error: ' + e.message, 'error');
+            }
+        }
+
+        async function loadProposals() {
+            const list = document.getElementById('proposals-list');
+            try {
+                const data = await apiFetch('GET', '/api/proposals/?limit=20');
+                const proposals = data.proposals || [];
+                if (!proposals.length) { list.innerHTML = '<p style="color:var(--sub);font-size:13px;">No proposals yet. Upload an RFP above.</p>'; return; }
+                list.innerHTML = proposals.map(p => `
+                    <div style="background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-md);padding:14px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+                        <div>
+                            <div style="font-weight:600;font-size:14px;">${esc(p.rfp_filename || 'Untitled RFP')}</div>
+                            <div style="font-size:12px;color:var(--sub);margin-top:4px;">${p.requirements?.length || 0} requirements extracted · Status: <span style="color:var(--lime);">${esc(p.status)}</span></div>
+                        </div>
+                        <div style="display:flex;gap:8px;">
+                            <button class="btn btn-ghost btn-sm" onclick="viewProposal(${p.id})">View</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteProposal(${p.id})">Delete</button>
+                        </div>
+                    </div>`).join('');
+            } catch (e) { list.innerHTML = `<p style="color:var(--red);">Error: ${esc(e.message)}</p>`; }
+        }
+
+        async function viewProposal(id) {
+            try {
+                const p = await apiFetch('GET', `/api/proposals/${id}`);
+                showProposalDetail(p);
+            } catch (e) { toast('Error loading proposal: ' + e.message, 'error'); }
+        }
+
+        function showProposalDetail(p) {
+            const div = document.getElementById('proposal-detail');
+            div.style.display = 'block';
+            const content = p.proposal_content || {};
+            const sectionLabels = {
+                executive_summary: '📌 Executive Summary',
+                understanding_of_requirements: '🔍 Understanding of Requirements',
+                proposed_solution: '💡 Proposed Solution',
+                relevant_experience: '🏆 Relevant Experience',
+                team_structure: '👥 Team Structure',
+                timeline: '📅 Timeline',
+                why_choose_us: '⭐ Why Choose Us',
+                next_steps: '➡️ Next Steps'
+            };
+            const sections = Object.entries(content).map(([key, val]) => {
+                if (!val || key === 'error') return '';
+                const label = sectionLabels[key] || key.replace(/_/g, ' ');
+                const valStr = Array.isArray(val) ? val.map(v => `<li style="margin-bottom:4px;">${esc(v)}</li>`).join('') : esc(val);
+                const isArray = Array.isArray(val);
+                return `<div style="margin-bottom:20px;">
+                    <h4 style="font-size:14px;font-weight:600;color:var(--lime);margin-bottom:8px;">${label}</h4>
+                    ${isArray ? `<ul style="padding-left:20px;font-size:13px;line-height:1.7;color:var(--text);">${valStr}</ul>` : `<p style="font-size:13px;line-height:1.7;color:var(--text);">${valStr}</p>`}
+                </div>`;
+            }).join('');
+            div.innerHTML = `
+                <div style="background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-lg);padding:28px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                        <h3 style="font-family:var(--serif);font-size:1.3rem;">📄 ${esc(p.rfp_filename || 'Proposal')}</h3>
+                        <select style="background:var(--bg);border:1px solid var(--border2);border-radius:6px;padding:6px 10px;color:var(--text);" onchange="updateProposalStatus(${p.id}, this.value)">
+                            ${['draft','reviewed','sent'].map(s => `<option value="${s}" ${s===p.status?'selected':''}>${s}</option>`).join('')}
+                        </select>
+                    </div>
+                    ${sections || '<p style="color:var(--sub);">No proposal content generated.</p>'}
+                </div>`;
+            div.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function updateProposalStatus(id, status) {
+            try {
+                await apiFetch('PUT', `/api/proposals/${id}`, { status });
+                toast('Status updated ✓', 'success');
+            } catch (e) { toast('Update failed: ' + e.message, 'error'); }
+        }
+
+        async function deleteProposal(id) {
+            if (!confirm('Delete this proposal?')) return;
+            try {
+                await fetch(`/api/proposals/${id}`, { method: 'DELETE', headers: { 'Authorization': 'Basic ' + CREDS } });
+                loadProposals();
+                document.getElementById('proposal-detail').style.display = 'none';
+                toast('Proposal deleted', 'success');
+            } catch (e) { toast('Delete failed: ' + e.message, 'error'); }
+        }
+
+        /* ══════════════════════════════════════════════════════════════
+           PHASE 6 — LEAD DISCOVERY
+        ══════════════════════════════════════════════════════════════ */
+
+        async function loadDiscoverySources() {
+            const tbody = document.getElementById('discovery-tbody');
+            try {
+                const data = await apiFetch('GET', '/api/discovery/sources');
+                const sources = data.sources || [];
+                if (!sources.length) { tbody.innerHTML = '<tr><td colspan="6" style="padding:32px;text-align:center;color:var(--sub);">No sources configured yet.</td></tr>'; return; }
+                tbody.innerHTML = sources.map(s => `<tr style="border-bottom:1px solid var(--border);">
+                    <td style="padding:10px 12px;font-weight:500;font-size:13px;">${esc(s.name)}</td>
+                    <td style="padding:10px 12px;font-size:12px;color:var(--sub);">${esc(s.source_type)}</td>
+                    <td style="padding:10px 12px;font-size:11px;color:var(--blue);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><a href="${esc(s.url)}" target="_blank" style="color:var(--blue);">${esc(s.url)}</a></td>
+                    <td style="padding:10px 12px;">
+                        <span style="color:${s.is_active ? 'var(--green)' : 'var(--dim)'};">${s.is_active ? '● Active' : '○ Paused'}</span>
+                    </td>
+                    <td style="padding:10px 12px;font-size:12px;color:var(--sub);">${s.last_scanned_at ? new Date(s.last_scanned_at).toLocaleString() : 'Never'}</td>
+                    <td style="padding:10px 12px;display:flex;gap:6px;">
+                        <button class="btn btn-ghost btn-sm" onclick="scanSourceNow(${s.id}, '${esc(s.name)}')">Scan Now</button>
+                        <button class="btn btn-ghost btn-sm" onclick="toggleSource(${s.id}, ${!s.is_active})">${s.is_active ? 'Pause' : 'Resume'}</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteSource(${s.id})">Del</button>
+                    </td>
+                </tr>`).join('');
+            } catch (e) { tbody.innerHTML = `<tr><td colspan="6" style="padding:16px;color:var(--red);">Error: ${esc(e.message)}</td></tr>`; }
+        }
+
+        function openAddSourceModal() { openModal('add-source-overlay'); }
+
+        async function saveDiscoverySource() {
+            const name = document.getElementById('src-name').value.trim();
+            const url = document.getElementById('src-url').value.trim();
+            const type = document.getElementById('src-type').value;
+            const kw = document.getElementById('src-keywords').value.trim();
+            const interval = parseInt(document.getElementById('src-interval').value) || 24;
+            if (!name || !url) { toast('Name and URL are required', 'error'); return; }
+            try {
+                await apiFetch('POST', '/api/discovery/sources', {
+                    name, url, source_type: type, keywords: kw ? kw.split(',').map(k => k.trim()).filter(Boolean) : [], scan_interval_hours: interval
+                });
+                closeModal('add-source-overlay');
+                loadDiscoverySources();
+                toast('Source added ✓', 'success');
+            } catch (e) { toast('Error: ' + e.message, 'error'); }
+        }
+
+        async function scanSourceNow(id, name) {
+            try {
+                await apiFetch('POST', `/api/discovery/sources/${id}/scan-now`);
+                toast(`Scan started for "${name}" — check Signals tab in a moment`, 'success');
+            } catch (e) { toast('Scan failed: ' + e.message, 'error'); }
+        }
+
+        async function toggleSource(id, isActive) {
+            try {
+                await apiFetch('PUT', `/api/discovery/sources/${id}`, { is_active: isActive });
+                loadDiscoverySources();
+                toast(isActive ? 'Source activated ✓' : 'Source paused ✓', 'success');
+            } catch (e) { toast('Error: ' + e.message, 'error'); }
+        }
+
+        async function deleteSource(id) {
+            if (!confirm('Delete this discovery source?')) return;
+            try {
+                await fetch(`/api/discovery/sources/${id}`, { method: 'DELETE', headers: { 'Authorization': 'Basic ' + CREDS } });
+                loadDiscoverySources(); toast('Source deleted', 'success');
+            } catch (e) { toast('Delete failed: ' + e.message, 'error'); }
+        }
+
+        /* ─── Generic API helper (non-admin prefix) ─────────────────── */
+        async function apiFetch(method, path, body) {
+            const opts = { method, headers: { 'Authorization': 'Basic ' + CREDS, 'Content-Type': 'application/json' } };
+            if (body) opts.body = JSON.stringify(body);
+            const res = await fetch(path, opts);
+            if (res.status === 401) {
+                const u = prompt('Admin username:', 'admin') || 'admin';
+                const p = prompt('Admin password:', '') || '';
+                CREDS = btoa(u + ':' + p);
+                return apiFetch(method, path, body);
+            }
+            if (res.status === 204) return null;
+            if (!res.ok) { const err = await res.json().catch(() => ({ detail: res.statusText })); throw new Error(err.detail || 'Request failed'); }
+            return res.json();
         }
 
     </script>

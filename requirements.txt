@@ -27,3 +27,10 @@ numpy==1.26.2
 # Utilities
 python-multipart==0.0.6
 aiofiles==23.2.1
+
+# Phase 5: RFP document parsing
+pdfplumber==0.10.3
+python-docx==1.1.0
+
+# Phase 6: Background lead discovery scheduler
+apscheduler==3.10.4

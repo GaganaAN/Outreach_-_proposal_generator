@@ -135,3 +135,114 @@ Format each match as:
 - Skill: [Brief description with portfolio link]
 
 Keep it concise and professional."""
+
+
+# ── Phase 1: Signal Classification ────────────────────────────────────────────
+
+SIGNAL_CLASSIFICATION_PROMPT = """You are an AI assistant that classifies business signals to determine what sales action to take.
+
+Analyze the following text and classify it. Return ONLY a valid JSON object.
+
+Text to analyze:
+{signal_text}
+
+Classify into exactly one of these types:
+- "job_hiring"        : Company is hiring for a role we can fill as a service provider (staff augmentation / consulting)
+- "rfp_opportunity"   : A formal Request for Proposal, tender, or procurement notice requiring a technical proposal
+- "service_request"   : Direct inquiry or request for IT services, software development, or consulting
+- "other"             : Not relevant to our business
+
+Return this exact JSON structure:
+{{
+  "signal_type": "job_hiring|rfp_opportunity|service_request|other",
+  "company_name": "extracted company name or null",
+  "detected_skills": ["skill1", "skill2"],
+  "confidence_score": 0.85,
+  "reasoning": "one sentence explaining the classification"
+}}
+
+Rules:
+1. confidence_score must be between 0.0 and 1.0
+2. detected_skills should list technology/domain skills mentioned (max 10)
+3. If no company name is found, use null
+4. Return ONLY the JSON object, no markdown, no explanation
+
+JSON Output:"""
+
+
+# ── Phase 4: AI Personalization ────────────────────────────────────────────────
+
+COMPANY_CONTEXT_EXTRACTION_PROMPT = """Extract key business context from the following company website text.
+Return ONLY a valid JSON object.
+
+Website text:
+{website_text}
+
+Return:
+{{
+  "company_description": "1-2 sentence description of what the company does",
+  "tech_stack": ["technology1", "technology2"],
+  "industry": "industry name",
+  "recent_focus": "any mentioned initiatives, expansions, or challenges (1 sentence or null)"
+}}
+
+Return ONLY the JSON, no markdown:"""
+
+
+# ── Phase 5: Proposal Generation ───────────────────────────────────────────────
+
+RFP_EXTRACTION_PROMPT = """You are an expert at analyzing RFP (Request for Proposal) documents.
+
+Extract structured requirements from the following RFP text.
+Return ONLY a valid JSON object.
+
+RFP Text:
+{rfp_text}
+
+Return:
+{{
+  "project_title": "project title",
+  "client_name": "client/organization name or null",
+  "requirements": ["requirement 1", "requirement 2"],
+  "tech_stack": ["technology1", "technology2"],
+  "timeline": "mentioned timeline or null",
+  "budget_range": "mentioned budget range or null",
+  "submission_deadline": "deadline date or null",
+  "evaluation_criteria": ["criterion 1", "criterion 2"]
+}}
+
+Return ONLY the JSON, no markdown:"""
+
+
+PROPOSAL_GENERATION_PROMPT = """You are an expert technical proposal writer for a software services company.
+
+Company Information:
+- Name: {company_name}
+- Website: {company_website}
+
+RFP Requirements:
+{requirements}
+
+Relevant Portfolio / Experience:
+{portfolio_matches}
+
+Write a structured technical proposal. Return ONLY a valid JSON object with these sections:
+
+{{
+  "executive_summary": "2-3 sentence summary of our understanding and value proposition",
+  "understanding_of_requirements": "2-3 paragraphs showing we understand the client's needs",
+  "proposed_solution": "detailed solution approach with methodology (3-4 paragraphs)",
+  "relevant_experience": "2-3 paragraphs highlighting relevant past projects and expertise",
+  "team_structure": "description of proposed team roles and expertise",
+  "timeline": "high-level project timeline with phases",
+  "why_choose_us": "3-4 bullet points on our key differentiators",
+  "next_steps": "1 paragraph on proposed next steps"
+}}
+
+Guidelines:
+- Be specific and reference the requirements
+- Mention portfolio evidence naturally
+- Keep each section focused and professional
+- Do not include pricing numbers (handled separately)
+
+Return ONLY the JSON object:"""

@@ -37,11 +37,13 @@ class PortfolioMatch(BaseModel):
 class EmailGenerationRequest(BaseModel):
     """Request model for email generation"""
     job_url: HttpUrl = Field(..., description="URL of the job posting")
-    
+    company_url: Optional[HttpUrl] = Field(None, description="Company website for AI personalization (optional)")
+
     class Config:
         json_schema_extra = {
             "example": {
-                "job_url": "https://jobs.nike.com/job/R-12345"
+                "job_url": "https://jobs.nike.com/job/R-12345",
+                "company_url": "https://www.nike.com"
             }
         }
 

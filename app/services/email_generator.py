@@ -86,7 +86,8 @@ class EmailGenerator:
     def generate_email_body(
         self,
         job_details: JobDetails,
-        portfolio_matches: List[PortfolioMatch]
+        portfolio_matches: List[PortfolioMatch],
+        company_context: str = ""
     ) -> str:
         """
         Generate email body content
@@ -106,6 +107,10 @@ class EmailGenerator:
             portfolio_context = self.format_portfolio_matches(portfolio_matches)
             
             # Create prompt
+            context_line = (
+                f"\nCompany Context (from their website):\n{company_context}\n"
+                if company_context else ""
+            )
             prompt = EMAIL_GENERATION_PROMPT.format(
                 company_name=self.settings.COMPANY_NAME,
                 company_website=self.settings.COMPANY_WEBSITE,
@@ -113,7 +118,7 @@ class EmailGenerator:
                 skills=", ".join(job_details.skills),
                 job_description=job_details.description,
                 portfolio_matches=portfolio_context
-            )
+            ) + context_line
             
             # Generate email
             email_body = self.llm_client.generate(
@@ -186,27 +191,38 @@ class EmailGenerator:
     def generate_complete_email(
         self,
         job_details: JobDetails,
-        portfolio_matches: List[PortfolioMatch]
+        portfolio_matches: List[PortfolioMatch],
+        company_url: str = None
     ) -> dict:
         """
         Generate complete email (subject + body)
-        
+
         Args:
             job_details: Structured job information
             portfolio_matches: Matched portfolio entries
-            
+            company_url: Optional company website URL for personalization
+
         Returns:
             Dict with email_subject and email_body
         """
         try:
+            # Optional: enrich with company context for personalization
+            company_context = ""
+            if company_url:
+                try:
+                    from app.services.personalization import get_personalization_service
+                    company_context = get_personalization_service().get_context(company_url)
+                except Exception as p_err:
+                    logger.warning(f"Personalization skipped: {p_err}")
+
             # Generate subject
             subject = self.generate_email_subject(
                 job_details.job_role,
                 job_details.skills
             )
-            
+
             # Generate body
-            body = self.generate_email_body(job_details, portfolio_matches)
+            body = self.generate_email_body(job_details, portfolio_matches, company_context)
             
             return {
                 "email_subject": subject,
