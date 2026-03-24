@@ -1,39 +1,43 @@
-fastapi==0.104.1
-uvicorn==0.24.0
-pydantic==2.5.0
-pydantic-settings==2.1.0
-python-dotenv==1.0.0
+fastapi>=0.110.0
+uvicorn>=0.24.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+python-dotenv>=1.0.0
 
 # LLM & AI
-langchain==0.1.0
-langchain-community==0.0.13
-langchain-groq==0.0.1
-groq==0.4.2
+groq>=0.9.0
 
 # Vector Store
-chromadb==0.4.22
-sentence-transformers==2.2.2
+chromadb>=0.4.22
+sentence-transformers>=2.2.2
 
 # Web Scraping
-beautifulsoup4==4.12.2
-lxml==4.9.3
-requests==2.31.0
-playwright==1.40.0
+beautifulsoup4>=4.12.2
+lxml>=5.3.0
+requests>=2.31.0
+playwright>=1.49.0
 
 # Data Processing
-pandas==2.1.4
-numpy==1.26.2
+pandas>=2.1.4
+numpy>=1.26.2
 
 # Utilities
-python-multipart==0.0.6
-aiofiles==23.2.1
+python-multipart>=0.0.6
+aiofiles>=24.1.0
 
 # Phase 5: RFP document parsing
-pdfplumber==0.10.3
-python-docx==1.1.0
+pdfplumber>=0.10.3
+python-docx>=1.1.0
 
 # Phase 6: Background lead discovery scheduler
-apscheduler==3.10.4
+apscheduler>=3.10.4
 
-# Phase 6+: DuckDuckGo search-based lead discovery
-duckduckgo-search>=6.0
+# Phase 6+: SearXNG-based lead discovery (via web_scraper module)
+crawl4ai>=0.4.0
+
+# Multi-LLM support
+openai>=1.30.0
+google-generativeai>=0.7.0
+
+# Daily report generation
+reportlab>=4.0.0

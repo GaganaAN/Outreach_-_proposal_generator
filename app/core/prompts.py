@@ -155,7 +155,7 @@ Classify into exactly one of these types:
 Return this exact JSON structure:
 {{
   "signal_type": "job_hiring|rfp_opportunity|service_request|other",
-  "company_name": "extracted company name or null",
+  "company_name": "extracted company or organization name, or null if not identifiable — NEVER use 'unknown', 'N/A', or placeholder strings",
   "detected_skills": ["skill1", "skill2"],
   "confidence_score": 0.85,
   "reasoning": "one sentence explaining the classification"
@@ -226,22 +226,25 @@ RFP Requirements:
 Relevant Portfolio / Experience:
 {portfolio_matches}
 
+Past Performance (Completed Projects):
+{past_projects}
+
 Write a structured technical proposal. Return ONLY a valid JSON object with these sections:
 
 {{
   "executive_summary": "2-3 sentence summary of our understanding and value proposition",
   "understanding_of_requirements": "2-3 paragraphs showing we understand the client's needs",
   "proposed_solution": "detailed solution approach with methodology (3-4 paragraphs)",
-  "relevant_experience": "2-3 paragraphs highlighting relevant past projects and expertise",
+  "relevant_experience": "2-3 paragraphs citing specific past project names, outcomes, and technologies from the Past Performance section above",
   "team_structure": "description of proposed team roles and expertise",
   "timeline": "high-level project timeline with phases",
-  "why_choose_us": "3-4 bullet points on our key differentiators",
+  "why_choose_us": "3-4 bullet points on our key differentiators, referencing specific past project outcomes",
   "next_steps": "1 paragraph on proposed next steps"
 }}
 
 Guidelines:
 - Be specific and reference the requirements
-- Mention portfolio evidence naturally
+- In relevant_experience and why_choose_us, cite actual project titles and measurable outcomes from Past Performance
 - Keep each section focused and professional
 - Do not include pricing numbers (handled separately)
 

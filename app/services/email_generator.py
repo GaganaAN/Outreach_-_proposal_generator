@@ -42,7 +42,7 @@ class EmailGenerator:
                 key_skills=", ".join(key_skills[:4])
             )
             
-            subject = self.llm_client.generate(prompt, max_tokens=100)
+            subject = self.llm_client.generate(prompt, max_tokens=100, provider=getattr(self, '_current_provider', None))
             
             # Clean and truncate
             subject = extract_email_safe_text(subject).strip()
@@ -87,7 +87,8 @@ class EmailGenerator:
         self,
         job_details: JobDetails,
         portfolio_matches: List[PortfolioMatch],
-        company_context: str = ""
+        company_context: str = "",
+        llm_provider: str = None,
     ) -> str:
         """
         Generate email body content
@@ -123,8 +124,9 @@ class EmailGenerator:
             # Generate email
             email_body = self.llm_client.generate(
                 prompt,
-                temperature=0.7,  # More creative for email writing
-                max_tokens=800  # Reduced for more concise emails (was 1500)
+                temperature=0.7,
+                max_tokens=800,
+                provider=llm_provider,
             )
             
             # Clean and format email text - preserve newlines!
@@ -192,7 +194,8 @@ class EmailGenerator:
         self,
         job_details: JobDetails,
         portfolio_matches: List[PortfolioMatch],
-        company_url: str = None
+        company_url: str = None,
+        llm_provider: str = None,
     ) -> dict:
         """
         Generate complete email (subject + body)
@@ -215,6 +218,9 @@ class EmailGenerator:
                 except Exception as p_err:
                     logger.warning(f"Personalization skipped: {p_err}")
 
+            # Store provider for use inside generate_email_subject
+            self._current_provider = llm_provider
+
             # Generate subject
             subject = self.generate_email_subject(
                 job_details.job_role,
@@ -222,7 +228,7 @@ class EmailGenerator:
             )
 
             # Generate body
-            body = self.generate_email_body(job_details, portfolio_matches, company_context)
+            body = self.generate_email_body(job_details, portfolio_matches, company_context, llm_provider=llm_provider)
             
             return {
                 "email_subject": subject,

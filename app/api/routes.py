@@ -123,7 +123,8 @@ async def generate_email(request: EmailGenerationRequest):
         email_content = email_generator.generate_complete_email(
             job_details=job_details,
             portfolio_matches=portfolio_matches,
-            company_url=str(request.company_url) if request.company_url else None
+            company_url=str(request.company_url) if request.company_url else None,
+            llm_provider=request.llm_provider,
         )
         
         processing_time = time.time() - start_time

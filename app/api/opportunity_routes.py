@@ -5,6 +5,7 @@ import logging
 import secrets
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import Response
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -192,3 +193,31 @@ async def mark_all_notifications_read(
     db.query(Notification).filter(Notification.is_read == False).update({"is_read": True})
     db.commit()
     return {"message": "All notifications marked as read"}
+
+
+# ── Daily Report ───────────────────────────────────────────────────────────────
+
+@router.get("/admin/reports/daily-opportunities")
+async def download_daily_report(
+    db: Session = Depends(get_db),
+    _: str = Depends(verify_admin),
+):
+    """Generate and download the daily opportunity report as PDF (admin auth required)."""
+    from datetime import datetime
+    from app.services.report_generator import generate_daily_report
+
+    try:
+        pdf_bytes = generate_daily_report(db)
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        logger.error(f"Report generation failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate report")
+
+    date_str = datetime.utcnow().strftime("%Y-%m-%d")
+    filename = f"daily_opportunity_report_{date_str}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

@@ -227,3 +227,44 @@ class DiscoverySource(Base):
             "keywords":            json.loads(self.keywords) if self.keywords else [],
             "created_at":          self.created_at.isoformat() if self.created_at else None,
         }
+
+
+# ── Past Performance ────────────────────────────────────────────────────────────
+
+class PastProject(Base):
+    """Past project / performance record used for proposal generation"""
+    __tablename__ = "past_projects"
+
+    id                = Column(Integer, primary_key=True, index=True)
+    title             = Column(String(300), nullable=False)
+    client_name       = Column(String(200), nullable=True)
+    industry          = Column(String(100), nullable=True)
+    project_type      = Column(String(100), nullable=True)  # e.g. "Data Engineering", "Cloud Migration"
+    problem_statement = Column(Text, nullable=True)
+    our_solution      = Column(Text, nullable=True)
+    technologies      = Column(Text, nullable=True)   # JSON list: ["AWS", "Snowflake", "Python"]
+    outcome           = Column(Text, nullable=True)   # measurable result
+    team_size         = Column(Integer, nullable=True)
+    duration_months   = Column(Integer, nullable=True)
+    start_year        = Column(Integer, nullable=True)
+    is_active         = Column(Boolean, default=True, index=True)
+    created_at        = Column(DateTime(timezone=True), server_default=func.now())
+
+    def to_dict(self):
+        import json
+        return {
+            "id":                self.id,
+            "title":             self.title,
+            "client_name":       self.client_name,
+            "industry":          self.industry,
+            "project_type":      self.project_type,
+            "problem_statement": self.problem_statement or "",
+            "our_solution":      self.our_solution or "",
+            "technologies":      json.loads(self.technologies) if self.technologies else [],
+            "outcome":           self.outcome or "",
+            "team_size":         self.team_size,
+            "duration_months":   self.duration_months,
+            "start_year":        self.start_year,
+            "is_active":         self.is_active,
+            "created_at":        self.created_at.isoformat() if self.created_at else None,
+        }

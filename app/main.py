@@ -14,6 +14,7 @@ from app.api.signal_routes import router as signal_router
 from app.api.opportunity_routes import router as opportunity_router
 from app.api.proposal_routes import router as proposal_router
 from app.api.discovery_routes import router as discovery_router
+from app.api.past_performance_routes import router as past_performance_router
 from app.database import init_db
 
 # Configure logging
@@ -43,7 +44,7 @@ app.add_middleware(
 
 
 @app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
+async def global_exception_handler(_request: Request, exc: Exception):
     logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
     return JSONResponse(
         status_code=500,
@@ -64,7 +65,7 @@ async def startup_event():
         from app.core.llm_client import get_llm_client
         from app.core.vector_store import get_vector_store
 
-        llm_client = get_llm_client()
+        get_llm_client()
         vector_store = get_vector_store(
             persist_dir=settings.CHROMA_PERSIST_DIR,
             collection_name=settings.COLLECTION_NAME,
@@ -75,9 +76,23 @@ async def startup_event():
         logger.info("✓ Vector store initialized")
         logger.info(f"✓ Portfolio documents: {vector_store.count_documents()}")
 
+        # Seed past performance data (runs only if table is empty)
+        try:
+            from app.database import SessionLocal
+            from app.seeds.past_projects import seed_past_projects
+            seed_db = SessionLocal()
+            seed_past_projects(seed_db)
+            seed_db.close()
+        except Exception as seed_err:
+            logger.warning(f"Past project seeding skipped: {seed_err}")
+
         # Start lead discovery scheduler if enabled
         if settings.DISCOVERY_ENABLED:
             _start_discovery_scheduler()
+
+        # Start daily report scheduler if enabled
+        if settings.DAILY_REPORT_ENABLED:
+            _start_report_scheduler()
 
         logger.info(f"Application ready at http://0.0.0.0:{settings.PORT}")
 
@@ -112,6 +127,38 @@ def _start_discovery_scheduler():
         logger.warning(f"Discovery scheduler could not start: {e}")
 
 
+def _start_report_scheduler():
+    """Start daily APScheduler job to email the opportunity report."""
+    try:
+        from apscheduler.schedulers.background import BackgroundScheduler
+        from apscheduler.triggers.cron import CronTrigger
+        from app.services.report_generator import send_daily_report_email
+        from app.database import SessionLocal
+
+        def _send_report():
+            db = SessionLocal()
+            try:
+                send_daily_report_email(db)
+            finally:
+                db.close()
+
+        scheduler = BackgroundScheduler()
+        scheduler.add_job(
+            _send_report,
+            trigger=CronTrigger(hour=settings.DAILY_REPORT_SEND_HOUR, minute=0),
+            id="daily_report",
+            replace_existing=True,
+        )
+        scheduler.start()
+        logger.info(
+            f"✓ Daily report scheduler started (fires at {settings.DAILY_REPORT_SEND_HOUR:02d}:00 UTC)"
+        )
+    except ImportError:
+        logger.warning("APScheduler not installed — daily report scheduler skipped")
+    except Exception as e:
+        logger.warning(f"Daily report scheduler could not start: {e}")
+
+
 @app.on_event("shutdown")
 async def shutdown_event():
     logger.info("Shutting down application")
@@ -124,7 +171,8 @@ app.include_router(email_router,        prefix="/api/admin", tags=["Email Tracki
 app.include_router(signal_router,       prefix="/api",       tags=["Signal Classification"])
 app.include_router(opportunity_router,  prefix="/api",       tags=["Opportunity Management"])
 app.include_router(proposal_router,     prefix="/api",       tags=["Proposal Generation"])
-app.include_router(discovery_router,    prefix="/api",       tags=["Lead Discovery"])
+app.include_router(discovery_router,         prefix="/api",       tags=["Lead Discovery"])
+app.include_router(past_performance_router,  prefix="/api/admin", tags=["Past Performance"])
 
 
 # ── Pages ──────────────────────────────────────────────────────────────────────

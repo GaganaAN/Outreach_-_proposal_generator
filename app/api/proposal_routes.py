@@ -51,6 +51,7 @@ def verify_admin(credentials: HTTPBasicCredentials = Depends(security)):
 async def upload_rfp_and_generate(
     file: UploadFile = File(..., description="RFP document (PDF, DOCX, or TXT)"),
     opportunity_id: Optional[int] = Form(None),
+    llm_provider: Optional[str] = Form(None),
     db: Session = Depends(get_db),
     _: str = Depends(verify_admin),
 ):
@@ -82,9 +83,22 @@ async def upload_rfp_and_generate(
         if not rfp_text.strip():
             raise HTTPException(status_code=422, detail="Could not extract text from the document")
 
-        # Generate proposal
+        # Generate proposal (pass db for past performance lookup)
         generator = get_proposal_generator()
-        result = generator.generate(rfp_text, opportunity_id=opportunity_id)
+        result = generator.generate(
+            rfp_text,
+            opportunity_id=opportunity_id,
+            llm_provider=llm_provider,
+            db=db,
+        )
+
+        # Return early if no matching past performance found
+        if result.get("no_match"):
+            return {
+                "no_match": True,
+                "message": result["message"],
+                "extraction_metadata": result.get("extraction", {}),
+            }
 
         # Save to DB
         proposal = Proposal(
@@ -103,6 +117,7 @@ async def upload_rfp_and_generate(
         return {
             **proposal.to_dict(),
             "extraction_metadata": result.get("extraction", {}),
+            "past_projects": result.get("past_projects", []),
         }
 
     except HTTPException:

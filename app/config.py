@@ -49,16 +49,30 @@ class Settings(BaseSettings):
     DISCOVERY_ENABLED: bool = False
     DISCOVERY_INTERVAL_HOURS: int = 24
 
-    # ── Phase 6+: Global Search (DuckDuckGo) ───────────────────────────────────
+    # ── Phase 6+: Global Search (SearXNG via web_scraper) ──────────────────────
     SEARCH_ENABLED: bool = False
+    SEARXNG_BASE_URL: str = "http://localhost:8080/search"
     SEARCH_KEYWORDS: str = (
-        "Request for Proposal data engineering,"
-        "hiring senior cloud engineer,"
-        "IT services vendor RFP,"
-        "Python AWS Snowflake hiring,"
-        "cloud data platform procurement"
+        "RFP IT services vendor,"
+        "procurement notice data engineering,"
+        "cloud platform services tender,"
+        "software development outsourcing bid,"
+        "technology services contract opportunity,"
+        "digital transformation services request,"
+        "managed services provider RFP,"
+        "data analytics platform procurement"
     )
-    SEARCH_MAX_RESULTS: int = 10
+
+    # ── Multi-LLM ────────────────────────────────────────────────────────────
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL: str = "gpt-4o-mini"
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-1.5-flash"
+    DEFAULT_LLM_PROVIDER: str = "openai"
+
+    # ── Daily Opportunity Report ─────────────────────────────────────────────
+    DAILY_REPORT_ENABLED: bool = False
+    DAILY_REPORT_SEND_HOUR: int = 8     # 8 AM daily
 
     class Config:
         env_file = ".env"

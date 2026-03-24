@@ -94,9 +94,14 @@ class SignalClassifier:
             confidence = float(result.get("confidence_score", 0.5))
             confidence = max(0.0, min(1.0, confidence))
 
+            # Normalize LLM non-answers to None
+            _NULL_VALUES = {"unknown", "n/a", "none", "not found", "not mentioned", "not specified", ""}
+            raw_company = result.get("company_name")
+            company_name = None if (raw_company is None or str(raw_company).strip().lower() in _NULL_VALUES) else raw_company
+
             return SignalResult(
                 signal_type=signal_type,
-                company_name=result.get("company_name"),
+                company_name=company_name,
                 detected_skills=skills,
                 confidence_score=confidence,
                 reasoning=result.get("reasoning", ""),

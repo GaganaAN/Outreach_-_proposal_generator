@@ -1450,6 +1450,9 @@
             <button class="nav-item" id="nav-discovery" onclick="showPage('discovery')">
                 <span class="ni">🔍</span> Lead Discovery
             </button>
+            <button class="nav-item" id="nav-past-performance" onclick="showPage('past-performance')">
+                <span class="ni">🏆</span> Past Performance
+            </button>
         </div>
 
         <div class="sb-spacer"></div>
@@ -1524,6 +1527,13 @@
                             style="color:var(--sub);font-weight:400;">(optional — for AI personalization)</span></label>
                     <input class="url-field" id="companyUrl" type="url" placeholder="https://www.company.com"
                         style="width:100%;margin-top:4px;">
+                    <label class="field-label" style="margin-top:12px;">LLM Provider <span style="color:var(--sub);font-weight:400;">(optional)</span></label>
+                    <select id="emailLlmProvider" style="background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-sm);padding:9px 12px;color:var(--text);font-size:13px;margin-top:4px;width:220px;">
+                        <option value="">Default (Groq)</option>
+                        <option value="groq">Groq (LLaMA 3.3)</option>
+                        <option value="openai">OpenAI (GPT-4o mini)</option>
+                        <option value="gemini">Gemini (1.5 Flash)</option>
+                    </select>
                     <div class="error-msg" id="error-msg"></div>
                 </div>
 
@@ -1843,6 +1853,9 @@
                         <option value="medium">Medium</option>
                         <option value="low">Low</option>
                     </select>
+                    <button class="btn btn-ghost" onclick="downloadDailyReport()" style="margin-left:auto;" title="Download daily PDF report">
+                        📥 Download Report
+                    </button>
                 </div>
 
                 <table style="width:100%;border-collapse:collapse;">
@@ -1890,6 +1903,17 @@
                             style="color:var(--sub);font-weight:400;">(optional)</span></label>
                     <input type="number" id="rfpOppId" placeholder="e.g. 42"
                         style="background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-sm);padding:10px 12px;color:var(--text);font-size:14px;width:200px;margin-top:6px;">
+                    <label class="field-label" style="margin-top:12px;">LLM Provider <span style="color:var(--sub);font-weight:400;">(optional)</span></label>
+                    <select id="proposalLlmProvider" style="background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-sm);padding:9px 12px;color:var(--text);font-size:13px;margin-top:4px;width:220px;">
+                        <option value="">Default (Groq)</option>
+                        <option value="groq">Groq (LLaMA 3.3)</option>
+                        <option value="openai">OpenAI (GPT-4o mini)</option>
+                        <option value="gemini">Gemini (1.5 Flash)</option>
+                    </select>
+                    <div id="rfp-no-match" style="display:none;margin-top:12px;background:#fffbeb;border:1px solid #f59e0b;border-radius:8px;padding:12px 16px;color:#92400e;font-size:13px;">
+                        ⚠️ <strong>No matching past performance found</strong> for this RFP's technology stack.
+                        Add relevant projects in the <a href="#" onclick="showPage('past-performance');return false;" style="color:#b45309;text-decoration:underline;">Past Performance</a> tab to generate a proposal.
+                    </div>
                     <div style="margin-top:14px;">
                         <button class="btn btn-lime" onclick="uploadRFP()">📄 Generate Proposal</button>
                     </div>
@@ -1943,9 +1967,12 @@
                 </div>
 
                 <!-- ── Configured Sources Table ───────────────────────── -->
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
                     <span style="font-weight:600;font-size:.9rem;color:var(--sub);text-transform:uppercase;letter-spacing:.06em;">Configured Sources</span>
-                    <button class="btn btn-lime btn-sm" onclick="openAddSourceModal()">+ Add Source</button>
+                    <div style="display:flex;gap:8px;">
+                        <button class="btn btn-ghost btn-sm" onclick="runAllSources()" id="run-all-btn" title="Scan all active sources now">⚡ Run All Sources Now</button>
+                        <button class="btn btn-lime btn-sm" onclick="openAddSourceModal()">+ Add Source</button>
+                    </div>
                 </div>
 
                 <table style="width:100%;border-collapse:collapse;">
@@ -1965,6 +1992,77 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- ══ PAST PERFORMANCE PAGE ══════════════════════════════ -->
+        <div class="page" id="page-past-performance">
+            <div style="padding:40px;max-width:1100px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                    <h2 style="font-family:var(--serif);font-size:1.8rem;">Past <em>Performance</em></h2>
+                    <button class="btn btn-lime" onclick="openPPModal()">+ Add Project</button>
+                </div>
+                <p style="color:var(--sub);margin-bottom:24px;">Manage past project records used to generate evidence-based proposals.</p>
+
+                <div id="pp-list"><p style="color:var(--sub);">Loading…</p></div>
+            </div>
+        </div>
+
+        <!-- Past Performance Add/Edit Modal -->
+        <div class="overlay" id="pp-modal-overlay" style="display:none;" onclick="if(event.target===this)closePPModal()">
+            <div class="modal" style="max-width:640px;max-height:88vh;overflow-y:auto;">
+                <h3 id="pp-modal-title" style="margin-bottom:18px;">Add Past Project</h3>
+                <input type="hidden" id="pp-edit-id">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div style="grid-column:1/-1;">
+                        <label class="field-label">Project Title *</label>
+                        <input id="pp-title" class="url-field" style="width:100%;margin-top:4px;" placeholder="e.g. Enterprise Data Lake on AWS">
+                    </div>
+                    <div>
+                        <label class="field-label">Client Name</label>
+                        <input id="pp-client" class="url-field" style="width:100%;margin-top:4px;" placeholder="Confidential">
+                    </div>
+                    <div>
+                        <label class="field-label">Industry</label>
+                        <input id="pp-industry" class="url-field" style="width:100%;margin-top:4px;" placeholder="e.g. Retail, Healthcare">
+                    </div>
+                    <div>
+                        <label class="field-label">Project Type</label>
+                        <input id="pp-type" class="url-field" style="width:100%;margin-top:4px;" placeholder="e.g. Data Engineering, Cloud Migration">
+                    </div>
+                    <div>
+                        <label class="field-label">Technologies (comma-separated)</label>
+                        <input id="pp-techs" class="url-field" style="width:100%;margin-top:4px;" placeholder="AWS, Python, Spark">
+                    </div>
+                    <div style="grid-column:1/-1;">
+                        <label class="field-label">Problem Statement</label>
+                        <textarea id="pp-problem" rows="2" style="width:100%;margin-top:4px;background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-sm);padding:10px;color:var(--text);font-size:13px;resize:vertical;"></textarea>
+                    </div>
+                    <div style="grid-column:1/-1;">
+                        <label class="field-label">Our Solution</label>
+                        <textarea id="pp-solution" rows="2" style="width:100%;margin-top:4px;background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-sm);padding:10px;color:var(--text);font-size:13px;resize:vertical;"></textarea>
+                    </div>
+                    <div style="grid-column:1/-1;">
+                        <label class="field-label">Outcome (measurable result)</label>
+                        <input id="pp-outcome" class="url-field" style="width:100%;margin-top:4px;" placeholder="e.g. Reduced query time from 4h to 10min">
+                    </div>
+                    <div>
+                        <label class="field-label">Team Size</label>
+                        <input id="pp-team" type="number" class="url-field" style="width:100%;margin-top:4px;" placeholder="5">
+                    </div>
+                    <div>
+                        <label class="field-label">Duration (months)</label>
+                        <input id="pp-duration" type="number" class="url-field" style="width:100%;margin-top:4px;" placeholder="6">
+                    </div>
+                    <div>
+                        <label class="field-label">Start Year</label>
+                        <input id="pp-year" type="number" class="url-field" style="width:100%;margin-top:4px;" placeholder="2023">
+                    </div>
+                </div>
+                <div style="display:flex;gap:10px;margin-top:20px;">
+                    <button class="btn btn-lime" onclick="savePPProject()">Save</button>
+                    <button class="btn btn-ghost" onclick="closePPModal()">Cancel</button>
+                </div>
             </div>
         </div>
 
@@ -2213,6 +2311,7 @@
                 opportunities: ['Opportunity Pipeline', 'Pipeline'],
                 proposals: ['Proposal Generator', 'Proposals'],
                 discovery: ['Lead Discovery', 'Discovery'],
+                'past-performance': ['Past Performance', 'Admin'],
             };
             document.getElementById('topbar-title').textContent = labels[name][0];
             document.getElementById('page-badge').textContent = labels[name][1];
@@ -2227,6 +2326,7 @@
             if (name === 'opportunities') { loadOppStats(); loadOpportunities(); }
             if (name === 'proposals') { loadProposals(); }
             if (name === 'discovery') { loadDiscoverySources(); initSearchCard(); }
+            if (name === 'past-performance') { loadPastProjects(); }
         }
 
         /* poll notification badge on load + every 30 s */
@@ -2447,10 +2547,12 @@
             btn.disabled = true;
             btnText.innerHTML = '<span class="gen-spinner"></span> Generating…';
 
+            const llmProvider = document.getElementById('emailLlmProvider').value;
             const payload = { job_url: jobUrl };
             if (companyUrl) {
                 try { new URL(companyUrl); payload.company_url = companyUrl; } catch { }
             }
+            if (llmProvider) payload.llm_provider = llmProvider;
 
             try {
                 const res = await fetch('/api/generate-email', {
@@ -3037,11 +3139,15 @@
         async function uploadRFP() {
             const fileInput = document.getElementById('rfpFile');
             const oppId = document.getElementById('rfpOppId').value.trim();
+            const llmProvider = document.getElementById('proposalLlmProvider').value;
             const progress = document.getElementById('rfp-progress');
+            const noMatchBox = document.getElementById('rfp-no-match');
+            noMatchBox.style.display = 'none';
             if (!fileInput.files.length) { toast('Please select an RFP file', 'error'); return; }
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
             if (oppId) formData.append('opportunity_id', oppId);
+            if (llmProvider) formData.append('llm_provider', llmProvider);
             progress.style.display = 'block';
             try {
                 const res = await fetch('/api/proposals/upload', {
@@ -3052,6 +3158,10 @@
                 if (!res.ok) throw new Error((await res.json()).detail || 'Upload failed');
                 const data = await res.json();
                 progress.style.display = 'none';
+                if (data.no_match) {
+                    noMatchBox.style.display = 'block';
+                    return;
+                }
                 showProposalDetail(data);
                 loadProposals();
                 toast('Proposal generated ✓', 'success');
@@ -3272,6 +3382,27 @@
             }
         }
 
+        async function runAllSources() {
+            const btn = document.getElementById('run-all-btn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Running…';
+            try {
+                const data = await apiFetch('GET', '/api/discovery/sources');
+                const sources = (data.sources || []).filter(s => s.is_active);
+                if (!sources.length) { toast('No active sources to scan', 'error'); return; }
+                for (const s of sources) {
+                    await apiFetch('POST', `/api/discovery/sources/${s.id}/scan-now`);
+                }
+                toast(`Scanning ${sources.length} source(s) — check Signals tab in ~30s`, 'success');
+                setTimeout(loadDiscoverySources, 2000);
+            } catch (e) {
+                toast('Run all failed: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '⚡ Run All Sources Now';
+            }
+        }
+
         /* ── Email Test ──────────────────────────────────────────────── */
 
         async function testEmailConfig() {
@@ -3318,6 +3449,132 @@
             if (res.status === 204) return null;
             if (!res.ok) { const err = await res.json().catch(() => ({ detail: res.statusText })); throw new Error(err.detail || 'Request failed'); }
             return res.json();
+        }
+
+        /* ══════════════════════════════════════════════════════════════
+           PAST PERFORMANCE
+        ══════════════════════════════════════════════════════════════ */
+
+        async function loadPastProjects() {
+            const list = document.getElementById('pp-list');
+            try {
+                const data = await apiFetch('GET', '/api/admin/past-projects/?limit=50');
+                const projects = data.projects || [];
+                if (!projects.length) {
+                    list.innerHTML = '<p style="color:var(--sub);font-size:13px;">No past projects yet. Click "Add Project" to get started.</p>';
+                    return;
+                }
+                list.innerHTML = projects.map(p => `
+                    <div style="background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-md);padding:16px 18px;margin-bottom:12px;">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                            <div>
+                                <div style="font-weight:600;font-size:15px;">${esc(p.title)}</div>
+                                <div style="font-size:12px;color:var(--sub);margin-top:3px;">${esc(p.project_type||'')} · ${esc(p.industry||'')} · ${p.start_year||''} · ${p.duration_months ? p.duration_months+'mo' : ''}</div>
+                                <div style="margin-top:6px;font-size:13px;">${esc(p.outcome||'')}</div>
+                                <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px;">${(p.technologies||[]).map(t=>`<span style="background:var(--card-bg);border:1px solid var(--border2);border-radius:4px;padding:2px 7px;font-size:11px;">${esc(t)}</span>`).join('')}</div>
+                            </div>
+                            <div style="display:flex;gap:8px;flex-shrink:0;margin-left:12px;">
+                                <button class="btn btn-ghost btn-sm" onclick="editPPProject(${p.id})">Edit</button>
+                                <button class="btn btn-danger btn-sm" onclick="deletePPProject(${p.id})">Delete</button>
+                            </div>
+                        </div>
+                    </div>`).join('');
+            } catch (e) {
+                list.innerHTML = `<p style="color:var(--red);">Error: ${esc(e.message)}</p>`;
+            }
+        }
+
+        function openPPModal(data) {
+            document.getElementById('pp-modal-title').textContent = data ? 'Edit Past Project' : 'Add Past Project';
+            document.getElementById('pp-edit-id').value = data ? data.id : '';
+            document.getElementById('pp-title').value = data ? data.title : '';
+            document.getElementById('pp-client').value = data ? (data.client_name||'') : '';
+            document.getElementById('pp-industry').value = data ? (data.industry||'') : '';
+            document.getElementById('pp-type').value = data ? (data.project_type||'') : '';
+            document.getElementById('pp-techs').value = data ? (data.technologies||[]).join(', ') : '';
+            document.getElementById('pp-problem').value = data ? (data.problem_statement||'') : '';
+            document.getElementById('pp-solution').value = data ? (data.our_solution||'') : '';
+            document.getElementById('pp-outcome').value = data ? (data.outcome||'') : '';
+            document.getElementById('pp-team').value = data ? (data.team_size||'') : '';
+            document.getElementById('pp-duration').value = data ? (data.duration_months||'') : '';
+            document.getElementById('pp-year').value = data ? (data.start_year||'') : '';
+            document.getElementById('pp-modal-overlay').style.display = 'flex';
+        }
+
+        function closePPModal() {
+            document.getElementById('pp-modal-overlay').style.display = 'none';
+        }
+
+        async function editPPProject(id) {
+            try {
+                const p = await apiFetch('GET', `/api/admin/past-projects/${id}`);
+                openPPModal(p);
+            } catch (e) { toast('Failed to load project: ' + e.message, 'error'); }
+        }
+
+        async function savePPProject() {
+            const id = document.getElementById('pp-edit-id').value;
+            const techs = document.getElementById('pp-techs').value.split(',').map(t=>t.trim()).filter(Boolean);
+            const payload = {
+                title: document.getElementById('pp-title').value.trim(),
+                client_name: document.getElementById('pp-client').value.trim() || null,
+                industry: document.getElementById('pp-industry').value.trim() || null,
+                project_type: document.getElementById('pp-type').value.trim() || null,
+                technologies: techs,
+                problem_statement: document.getElementById('pp-problem').value.trim() || null,
+                our_solution: document.getElementById('pp-solution').value.trim() || null,
+                outcome: document.getElementById('pp-outcome').value.trim() || null,
+                team_size: parseInt(document.getElementById('pp-team').value)||null,
+                duration_months: parseInt(document.getElementById('pp-duration').value)||null,
+                start_year: parseInt(document.getElementById('pp-year').value)||null,
+            };
+            if (!payload.title) { toast('Project title is required', 'error'); return; }
+            try {
+                if (id) {
+                    await apiFetch('PUT', `/api/admin/past-projects/${id}`, payload);
+                    toast('Project updated ✓', 'success');
+                } else {
+                    await apiFetch('POST', '/api/admin/past-projects/', payload);
+                    toast('Project added ✓', 'success');
+                }
+                closePPModal();
+                loadPastProjects();
+            } catch (e) { toast('Save failed: ' + e.message, 'error'); }
+        }
+
+        async function deletePPProject(id) {
+            if (!confirm('Delete this past project?')) return;
+            try {
+                await apiFetch('DELETE', `/api/admin/past-projects/${id}`);
+                toast('Deleted', 'success');
+                loadPastProjects();
+            } catch (e) { toast('Delete failed: ' + e.message, 'error'); }
+        }
+
+        /* ── Daily Report Download ─────────────────────────────────── */
+
+        async function downloadDailyReport() {
+            try {
+                const res = await fetch('/api/admin/reports/daily-opportunities', {
+                    headers: { 'Authorization': 'Basic ' + CREDS }
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({ detail: res.statusText }));
+                    throw new Error(err.detail || 'Failed to generate report');
+                }
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `daily_opportunity_report_${new Date().toISOString().split('T')[0]}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+                toast('Report downloaded ✓', 'success');
+            } catch (e) {
+                toast('Report error: ' + e.message, 'error');
+            }
         }
 
     </script>

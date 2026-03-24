@@ -38,12 +38,14 @@ class EmailGenerationRequest(BaseModel):
     """Request model for email generation"""
     job_url: HttpUrl = Field(..., description="URL of the job posting")
     company_url: Optional[HttpUrl] = Field(None, description="Company website for AI personalization (optional)")
+    llm_provider: Optional[str] = Field(None, description="LLM to use: groq | openai | gemini (default: openai)")
 
     class Config:
         json_schema_extra = {
             "example": {
                 "job_url": "https://jobs.nike.com/job/R-12345",
-                "company_url": "https://www.nike.com"
+                "company_url": "https://www.nike.com",
+                "llm_provider": "openai"
             }
         }
 

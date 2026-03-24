@@ -5,6 +5,8 @@ import logging
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 from typing import Optional
 from sqlalchemy.orm import Session
 
@@ -140,6 +142,46 @@ class NotificationService:
             return False
         except Exception as e:
             logger.warning(f"Email alert failed (non-critical): {e}")
+            return False
+
+    def send_email_with_attachment(
+        self,
+        to_email: str,
+        subject: str,
+        body: str,
+        attachment_bytes: bytes,
+        attachment_filename: str,
+        attachment_mime: str = "application/octet-stream",
+    ) -> bool:
+        """Send an email with a binary attachment via SMTP."""
+        if not self.settings.SMTP_HOST:
+            logger.warning("SMTP_HOST not configured — cannot send attachment email")
+            return False
+        try:
+            msg = MIMEMultipart()
+            msg["Subject"] = subject
+            msg["From"] = self.settings.SMTP_FROM_EMAIL or self.settings.SMTP_USERNAME
+            msg["To"] = to_email
+            msg.attach(MIMEText(body, "plain"))
+
+            part = MIMEBase(*attachment_mime.split("/", 1))
+            part.set_payload(attachment_bytes)
+            encoders.encode_base64(part)
+            part.add_header("Content-Disposition", f'attachment; filename="{attachment_filename}"')
+            msg.attach(part)
+
+            with smtplib.SMTP(self.settings.SMTP_HOST, self.settings.SMTP_PORT) as server:
+                server.ehlo()
+                server.starttls()
+                server.ehlo()
+                if self.settings.SMTP_USERNAME and self.settings.SMTP_PASSWORD:
+                    server.login(self.settings.SMTP_USERNAME, self.settings.SMTP_PASSWORD)
+                server.sendmail(msg["From"], [to_email], msg.as_string())
+
+            logger.info(f"Email with attachment '{attachment_filename}' sent to {to_email}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to send attachment email: {e}")
             return False
 
     def test_email(self) -> dict:

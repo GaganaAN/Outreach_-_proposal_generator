@@ -1,26 +1,32 @@
 """
-Lead Discovery Agent — periodically scrapes configured sources and auto-creates Signals
+Lead Discovery Agent — periodically scrapes configured sources and auto-creates Signals.
+Uses the web_scraper module (SearXNG + stealth browser) for all HTTP operations.
 """
+import asyncio
 import logging
 import json
 from datetime import datetime
 from typing import List
 
-import requests
-from bs4 import BeautifulSoup
-
 from app.utils.text_cleaner import clean_html_text
 
 logger = logging.getLogger(__name__)
 
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/91.0.4472.124 Safari/537.36"
-    )
-}
 MIN_CONFIDENCE = 0.6  # only save signals with confidence above this threshold
+
+
+def _run_async(coro):
+    """Run an async coroutine from a sync context safely."""
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                future = pool.submit(asyncio.run, coro)
+                return future.result()
+        return loop.run_until_complete(coro)
+    except RuntimeError:
+        return asyncio.run(coro)
 
 
 class LeadDiscoveryAgent:
@@ -52,7 +58,7 @@ class LeadDiscoveryAgent:
             logger.error(f"[Discovery] Global search failed: {e}")
 
     def run_global_search(self):
-        """Search DuckDuckGo with configured keywords and process results as signals."""
+        """Search via SearXNG (web_scraper module) with configured keywords and process results as signals."""
         from app.config import get_settings
         from app.database import SessionLocal
 
@@ -66,26 +72,28 @@ class LeadDiscoveryAgent:
             logger.info("[Search] No search keywords configured, skipping")
             return
 
-        logger.info(f"[Search] Running DuckDuckGo search for {len(keywords)} keyword(s)")
-
         try:
-            from duckduckgo_search import DDGS
+            from web_scraper import WebScraper
         except ImportError:
-            logger.warning("[Search] duckduckgo-search not installed — run: pip install duckduckgo-search>=6.0")
+            logger.warning("[Search] web_scraper module not found — ensure web_scraper/ is in project root")
             return
+
+        logger.info(f"[Search] Running SearXNG search for {len(keywords)} keyword(s)")
 
         db = SessionLocal()
         signals_created = 0
         try:
             for query in keywords:
                 try:
-                    with DDGS() as ddgs:
-                        results = list(ddgs.text(query, max_results=settings.SEARCH_MAX_RESULTS))
-                    for result in results:
-                        snippet = f"{result.get('title', '')}. {result.get('body', '')}".strip()
-                        source_url = result.get('href', '')
+                    scraper = WebScraper()
+                    output = _run_async(scraper.search_and_scrape(query, max_urls=5))
+                    for crawl_result in output.successful():
+                        # Combine title from metadata + first 500 chars of content as snippet
+                        title = crawl_result.metadata.get("title", "")
+                        body = crawl_result.content[:500] if crawl_result.content else ""
+                        snippet = f"{title}. {body}".strip()
                         if len(snippet) > 60:
-                            created = self._process_snippet(snippet, source_url, db)
+                            created = self._process_snippet(snippet, crawl_result.url, db)
                             if created:
                                 signals_created += 1
                 except Exception as e:
@@ -136,14 +144,28 @@ class LeadDiscoveryAgent:
         return signals_created
 
     def _scrape(self, url: str) -> str:
-        """Scrape and clean text from a URL."""
+        """Scrape and clean text from a URL using stealth browser via web_scraper module."""
         try:
-            resp = requests.get(url, headers=HEADERS, timeout=15)
-            resp.raise_for_status()
-            soup = BeautifulSoup(resp.content, "html.parser")
-            for tag in soup(["script", "style", "nav", "footer"]):
-                tag.decompose()
-            return clean_html_text(soup.get_text())
+            from web_scraper.crawler import Crawler
+            result = _run_async(Crawler().crawl(url))
+            if result.success and result.content:
+                return clean_html_text(result.content)
+            logger.debug(f"[Scrape] web_scraper returned no content for {url}: {result.error}")
+            return ""
+        except ImportError:
+            # Fallback to basic requests if web_scraper unavailable
+            import requests
+            from bs4 import BeautifulSoup
+            try:
+                resp = requests.get(url, timeout=15)
+                resp.raise_for_status()
+                soup = BeautifulSoup(resp.content, "html.parser")
+                for tag in soup(["script", "style", "nav", "footer"]):
+                    tag.decompose()
+                return clean_html_text(soup.get_text())
+            except Exception as e:
+                logger.debug(f"Fallback scrape failed for {url}: {e}")
+                return ""
         except Exception as e:
             logger.debug(f"Scrape failed for {url}: {e}")
             return ""
@@ -184,10 +206,12 @@ class LeadDiscoveryAgent:
             if result.signal_type == "other" or result.confidence_score < MIN_CONFIDENCE:
                 return False
 
-            # Avoid duplicates: skip if same company + type created in last 7 days
+            # Avoid duplicates within a 7-day window
+            from datetime import timedelta
+            cutoff = datetime.utcnow() - timedelta(days=7)
+
             if result.company_name:
-                from datetime import timedelta
-                cutoff = datetime.utcnow() - timedelta(days=7)
+                # Deduplicate by company name + signal type
                 existing = (
                     db.query(Signal)
                     .filter(
@@ -200,6 +224,22 @@ class LeadDiscoveryAgent:
                 if existing:
                     logger.debug(
                         f"[Discovery] Skipping duplicate signal for {result.company_name}"
+                    )
+                    return False
+            else:
+                # No company name (e.g. government RFPs) — deduplicate by source URL + type
+                existing = (
+                    db.query(Signal)
+                    .filter(
+                        Signal.source_url == source_url,
+                        Signal.signal_type == result.signal_type,
+                        Signal.created_at >= cutoff,
+                    )
+                    .first()
+                )
+                if existing:
+                    logger.debug(
+                        f"[Discovery] Skipping duplicate signal for URL {source_url}"
                     )
                     return False
 
