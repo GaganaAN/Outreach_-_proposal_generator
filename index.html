@@ -1765,19 +1765,8 @@
         <!-- ══ SIGNALS PAGE ═══════════════════════════════════════ -->
         <div class="page" id="page-signals">
             <div style="padding:40px;max-width:1100px;">
-                <h2 style="font-family:var(--serif);font-size:1.8rem;margin-bottom:6px;">Signal <em>Classifier</em></h2>
-                <p style="color:var(--sub);margin-bottom:24px;">Paste a job posting URL or any text to classify it and
-                    route it to the right workflow.</p>
-
-                <div class="input-card" style="margin-bottom:24px;">
-                    <label class="field-label">URL or Text to Classify</label>
-                    <textarea id="signalInput" rows="4"
-                        style="width:100%;background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-sm);padding:12px;color:var(--text);font-family:var(--sans);font-size:14px;resize:vertical;margin-top:6px;"
-                        placeholder="https://jobs.company.com/role  OR paste any job description / RFP notice text..."></textarea>
-                    <button class="btn btn-lime" style="margin-top:12px;" onclick="classifySignal()">📡 Classify
-                        Signal</button>
-                    <div id="signal-result" style="margin-top:16px;display:none;"></div>
-                </div>
+                <h2 style="font-family:var(--serif);font-size:1.8rem;margin-bottom:6px;">Discovered <em>Signals</em></h2>
+                <p style="color:var(--sub);margin-bottom:24px;">Signals are auto-discovered by the Lead Discovery agent from configured sources.</p>
 
                 <h3 style="font-size:1rem;font-weight:600;margin-bottom:12px;color:var(--sub);">Recent Signals</h3>
                 <div id="signals-table-wrap">
@@ -1796,11 +1785,13 @@
                                 </th>
                                 <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">
                                     Status</th>
+                                <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">
+                                    Delete</th>
                             </tr>
                         </thead>
                         <tbody id="signals-tbody">
                             <tr>
-                                <td colspan="6" style="padding:32px;text-align:center;color:var(--sub);">Loading
+                                <td colspan="7" style="padding:32px;text-align:center;color:var(--sub);">Loading
                                     signals…</td>
                             </tr>
                         </tbody>
@@ -1878,11 +1869,13 @@
                             </th>
                             <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Action
                             </th>
+                            <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">Delete
+                            </th>
                         </tr>
                     </thead>
                     <tbody id="opps-tbody">
                         <tr>
-                            <td colspan="7" style="padding:32px;text-align:center;color:var(--sub);">Loading
+                            <td colspan="8" style="padding:32px;text-align:center;color:var(--sub);">Loading
                                 opportunities…</td>
                         </tr>
                     </tbody>
@@ -1902,10 +1895,6 @@
                     <label class="field-label">RFP Document</label>
                     <input type="file" id="rfpFile" accept=".pdf,.docx,.txt,.md"
                         style="margin-top:8px;color:var(--text);">
-                    <label class="field-label" style="margin-top:12px;">Linked Opportunity ID <span
-                            style="color:var(--sub);font-weight:400;">(optional)</span></label>
-                    <input type="number" id="rfpOppId" placeholder="e.g. 42"
-                        style="background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-sm);padding:10px 12px;color:var(--text);font-size:14px;width:200px;margin-top:6px;">
                     <label class="field-label" style="margin-top:12px;">LLM Provider <span
                             style="color:var(--sub);font-weight:400;">(optional)</span></label>
                     <select id="proposalLlmProvider"
@@ -2347,7 +2336,7 @@
                 email: ['Cold Email Generator', 'Generator'],
                 history: ['Email History', 'Tracking'],
                 portfolio: ['Portfolio Manager', 'Admin'],
-                signals: ['Signal Classifier', 'Signals'],
+                signals: ['Discovered Signals', 'Signals'],
                 opportunities: ['Opportunity Pipeline', 'Pipeline'],
                 proposals: ['Proposal Generator', 'Proposals'],
                 discovery: ['Lead Discovery', 'Discovery'],
@@ -2953,40 +2942,8 @@
         }
 
         /* ══════════════════════════════════════════════════════════════
-           PHASE 1 — SIGNAL CLASSIFIER
+           PHASE 1 — SIGNALS (auto-discovered via Lead Discovery)
         ══════════════════════════════════════════════════════════════ */
-
-        async function classifySignal() {
-            const input = document.getElementById('signalInput').value.trim();
-            if (!input) { toast('Please enter a URL or text', 'error'); return; }
-            const resultDiv = document.getElementById('signal-result');
-            resultDiv.style.display = 'block';
-            resultDiv.innerHTML = '<p style="color:var(--sub);">⏳ Classifying signal…</p>';
-            try {
-                const res = await fetch('/api/signals/classify', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ input })
-                });
-                if (!res.ok) throw new Error((await res.json()).detail || 'Classification failed');
-                const data = await res.json();
-                const sig = data.signal;
-                const colors = { job_hiring: 'var(--blue)', rfp_opportunity: 'var(--amber)', service_request: 'var(--green)', other: 'var(--dim)' };
-                const labels = { job_hiring: '✉️ Job Hiring', rfp_opportunity: '📋 RFP Opportunity', service_request: '🤝 Service Request', other: '—' };
-                resultDiv.innerHTML = `
-                    <div style="background:var(--raised);border:1px solid var(--border2);border-radius:var(--r-md);padding:16px;margin-top:8px;">
-                        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-                            <span style="background:${colors[sig.signal_type]};color:var(--bg);padding:4px 12px;border-radius:20px;font-size:13px;font-weight:600;">${labels[sig.signal_type]}</span>
-                            <span style="color:var(--sub);font-size:13px;">Confidence: <strong style="color:var(--text);">${(sig.confidence_score * 100).toFixed(0)}%</strong></span>
-                            ${sig.company_name ? `<span style="color:var(--sub);font-size:13px;">Company: <strong style="color:var(--text);">${esc(sig.company_name)}</strong></span>` : ''}
-                        </div>
-                        ${sig.detected_skills?.length ? `<div style="margin-top:10px;font-size:13px;color:var(--sub);">Skills: <span style="color:var(--text);">${sig.detected_skills.map(s => esc(s)).join(', ')}</span></div>` : ''}
-                        <div style="margin-top:10px;font-size:13px;">Action: <code style="color:var(--lime);">${data.suggested_action}</code></div>
-                        ${data.opportunity ? `<div style="margin-top:6px;font-size:13px;color:var(--sub);">Opportunity created — Score: <strong style="color:var(--text);">${data.opportunity.overall_score}</strong>, Priority: <strong style="color:var(--amber);">${data.opportunity.priority.toUpperCase()}</strong></div>` : ''}
-                        ${data.notification_sent ? `<div style="margin-top:6px;font-size:12px;color:var(--green);">✓ Marketing team notified</div>` : ''}
-                    </div>`;
-                loadSignals(); toast('Signal classified ✓', 'success');
-            } catch (e) { resultDiv.innerHTML = `<p style="color:var(--red);">Error: ${esc(e.message)}</p>`; }
-        }
 
         async function loadSignals() {
             const tbody = document.getElementById('signals-tbody');
@@ -2995,7 +2952,7 @@
                 const signals = data.signals || [];
                 const badge = document.getElementById('signals-badge');
                 if (signals.length > 0) { badge.textContent = signals.length; badge.style.display = ''; }
-                if (!signals.length) { tbody.innerHTML = '<tr><td colspan="6" style="padding:32px;text-align:center;color:var(--sub);">No signals yet. Classify one above.</td></tr>'; return; }
+                if (!signals.length) { tbody.innerHTML = '<tr><td colspan="7" style="padding:32px;text-align:center;color:var(--sub);">No signals yet. Run Lead Discovery to auto-discover signals.</td></tr>'; return; }
                 const colors = { job_hiring: 'var(--blue)', rfp_opportunity: 'var(--amber)', service_request: 'var(--green)', other: 'var(--dim)' };
                 tbody.innerHTML = signals.map(s => `<tr style="border-bottom:1px solid var(--border);">
                     <td style="padding:10px 12px;"><span style="background:${colors[s.signal_type]};color:var(--bg);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">${esc(s.signal_type)}</span></td>
@@ -3004,8 +2961,18 @@
                     <td style="padding:10px 12px;font-size:13px;">${(s.confidence_score * 100).toFixed(0)}%</td>
                     <td style="padding:10px 12px;font-size:12px;color:var(--sub);">${s.created_at ? new Date(s.created_at).toLocaleDateString() : '—'}</td>
                     <td style="padding:10px 12px;font-size:12px;">${esc(s.status)}</td>
+                    <td style="padding:10px 12px;"><button onclick="deleteSignal(${s.id})" title="Delete signal" style="background:none;border:none;cursor:pointer;font-size:16px;padding:2px 4px;opacity:0.7;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">🗑️</button></td>
                 </tr>`).join('');
-            } catch (e) { tbody.innerHTML = `<tr><td colspan="6" style="padding:16px;color:var(--red);">Error: ${esc(e.message)}</td></tr>`; }
+            } catch (e) { tbody.innerHTML = `<tr><td colspan="7" style="padding:16px;color:var(--red);">Error: ${esc(e.message)}</td></tr>`; }
+        }
+
+        async function deleteSignal(id) {
+            if (!confirm('Delete this signal? This cannot be undone.')) return;
+            try {
+                await apiFetch('DELETE', `/api/signals/${id}`);
+                toast('Signal deleted', 'success');
+                loadSignals();
+            } catch (e) { toast('Delete failed: ' + e.message, 'error'); }
         }
 
         /* ══════════════════════════════════════════════════════════════
@@ -3040,7 +3007,7 @@
             try {
                 const data = await apiFetch('GET', url);
                 const opps = data.opportunities || [];
-                if (!opps.length) { tbody.innerHTML = '<tr><td colspan="7" style="padding:32px;text-align:center;color:var(--sub);">No opportunities yet.</td></tr>'; return; }
+                if (!opps.length) { tbody.innerHTML = '<tr><td colspan="8" style="padding:32px;text-align:center;color:var(--sub);">No opportunities yet.</td></tr>'; return; }
                 const pColors = { high: 'var(--red)', medium: 'var(--amber)', low: 'var(--dim)' };
                 tbody.innerHTML = opps.map(o => `<tr style="border-bottom:1px solid var(--border);">
                     <td style="padding:10px 12px;font-size:13px;font-weight:500;">${esc(o.company_name || '—')}</td>
@@ -3058,8 +3025,19 @@
                     <td style="padding:10px 12px;">
                         ${o.opportunity_type === 'proposal' ? `<button class="btn btn-ghost btn-sm" onclick="showPage('proposals')">+ Proposal</button>` : `<button class="btn btn-ghost btn-sm" onclick="document.getElementById('jobUrl').value='${esc(o.source_url || '')}';showPage('email')">Gen Email</button>`}
                     </td>
+                    <td style="padding:10px 12px;"><button onclick="deleteOpportunity(${o.id})" title="Delete opportunity" style="background:none;border:none;cursor:pointer;font-size:16px;padding:2px 4px;opacity:0.7;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">🗑️</button></td>
                 </tr>`).join('');
-            } catch (e) { tbody.innerHTML = `<tr><td colspan="7" style="padding:16px;color:var(--red);">Error: ${esc(e.message)}</td></tr>`; }
+            } catch (e) { tbody.innerHTML = `<tr><td colspan="8" style="padding:16px;color:var(--red);">Error: ${esc(e.message)}</td></tr>`; }
+        }
+
+        async function deleteOpportunity(id) {
+            if (!confirm('Delete this opportunity? This cannot be undone.')) return;
+            try {
+                await apiFetch('DELETE', `/api/opportunities/${id}`);
+                toast('Opportunity deleted', 'success');
+                loadOpportunities();
+                loadOppStats();
+            } catch (e) { toast('Delete failed: ' + e.message, 'error'); }
         }
 
         async function updateOppStatus(id, status) {
@@ -3178,7 +3156,6 @@
 
         async function uploadRFP() {
             const fileInput = document.getElementById('rfpFile');
-            const oppId = document.getElementById('rfpOppId').value.trim();
             const llmProvider = document.getElementById('proposalLlmProvider').value;
             const progress = document.getElementById('rfp-progress');
             const noMatchBox = document.getElementById('rfp-no-match');
@@ -3186,7 +3163,6 @@
             if (!fileInput.files.length) { toast('Please select an RFP file', 'error'); return; }
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
-            if (oppId) formData.append('opportunity_id', oppId);
             if (llmProvider) formData.append('llm_provider', llmProvider);
             progress.style.display = 'block';
             try {
@@ -3225,7 +3201,7 @@
                         </div>
                         <div style="display:flex;gap:8px;">
                             <button class="btn btn-ghost btn-sm" onclick="viewProposal(${p.id})">View</button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteProposal(${p.id})">Delete</button>
+                            <button onclick="deleteProposal(${p.id})" title="Delete proposal" style="background:none;border:none;cursor:pointer;font-size:16px;padding:2px 4px;opacity:0.7;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">🗑️</button>
                         </div>
                     </div>`).join('');
             } catch (e) { list.innerHTML = `<p style="color:var(--red);">Error: ${esc(e.message)}</p>`; }

@@ -131,6 +131,21 @@ async def update_opportunity(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.delete("/opportunities/{opportunity_id}", status_code=status.HTTP_200_OK)
+async def delete_opportunity(
+    opportunity_id: int,
+    db: Session = Depends(get_db),
+    _: str = Depends(verify_admin),
+):
+    """Delete an opportunity by ID (admin auth required)."""
+    opp = db.query(Opportunity).filter(Opportunity.id == opportunity_id).first()
+    if not opp:
+        raise HTTPException(status_code=404, detail="Opportunity not found")
+    db.delete(opp)
+    db.commit()
+    return {"message": f"Opportunity {opportunity_id} deleted"}
+
+
 # ── Email Test ─────────────────────────────────────────────────────────────────
 
 @router.post("/admin/test-email")
