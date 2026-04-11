@@ -1,6 +1,11 @@
 """
 Lead Discovery Agent — periodically scrapes configured sources and auto-creates Signals.
-Uses the web_scraper module (SearXNG + stealth browser) for all HTTP operations.
+
+Routing logic:
+- source_type == "procurement"  → CaptureService (Scrapling stealth + 10-section extraction)
+- source_type == "job_board" | "news"  → existing web_scraper / snippet → Signal pipeline
+
+The cold email pipeline and Signal/Opportunity models are NOT affected.
 """
 import asyncio
 import logging
@@ -30,7 +35,12 @@ def _run_async(coro):
 
 
 class LeadDiscoveryAgent:
-    """Scrapes configured sources and feeds discovered signals into the classification pipeline."""
+    """
+    Scrapes configured sources and feeds discovered leads into the pipeline.
+
+    - procurement sources → CaptureService → Solicitation records
+    - job_board / news sources → snippet classifier → Signal + Opportunity records
+    """
 
     def run_all_sources(self):
         """Scan all active discovery sources + run global search. Called by APScheduler."""
@@ -51,7 +61,7 @@ class LeadDiscoveryAgent:
         finally:
             db.close()
 
-        # Also run global DuckDuckGo search alongside configured sources
+        # Also run global SearXNG search alongside configured sources
         try:
             self.run_global_search()
         except Exception as e:
@@ -105,18 +115,39 @@ class LeadDiscoveryAgent:
 
     def scan_source(self, source, db) -> int:
         """
-        Scrape a single source, filter by keywords, and classify matching snippets.
+        Route a single source to the correct pipeline based on source_type.
 
-        Args:
-            source:  DiscoverySource ORM instance
-            db:      Active SQLAlchemy session
+        - "procurement" → CaptureService (Scrapling + 10-section LLM extraction → Solicitation)
+        - "job_board" | "news" → existing snippet→Signal pipeline (unchanged)
 
         Returns:
-            Number of new signals created
+            Number of new records created (Solicitation or Signal)
         """
-        logger.info(f"[Discovery] Scanning: {source.name} ({source.url})")
+        if source.source_type == "procurement":
+            return self._scan_procurement(source, db)
+        else:
+            return self._scan_basic(source, db)
 
-        # Parse keywords
+    def _scan_procurement(self, source, db) -> int:
+        """
+        Procurement source: full Scrapling-based capture pipeline.
+        Delegates entirely to CaptureService — creates Solicitation records.
+        """
+        logger.info(f"[Discovery] Procurement scan: {source.name} ({source.url})")
+        try:
+            from app.services.capture_service import get_capture_service
+            return get_capture_service().scan_source(source, db)
+        except Exception as e:
+            logger.error(f"[Discovery] Procurement scan failed for {source.name}: {e}")
+            return 0
+
+    def _scan_basic(self, source, db) -> int:
+        """
+        Job board / news source: scrape → extract snippets → classify → Signal + Opportunity.
+        This is the original scan_source logic, preserved unchanged.
+        """
+        logger.info(f"[Discovery] Basic scan: {source.name} ({source.url})")
+
         keywords: List[str] = []
         if source.keywords:
             try:
@@ -124,18 +155,16 @@ class LeadDiscoveryAgent:
             except Exception:
                 keywords = []
 
-        # Scrape page
         raw_text = self._scrape(source.url)
         if not raw_text:
             logger.warning(f"[Discovery] No text scraped from {source.url}")
             return 0
 
-        # Split into chunks and filter by keywords
         snippets = self._extract_relevant_snippets(raw_text, keywords)
         logger.info(f"[Discovery] Found {len(snippets)} relevant snippet(s) in {source.name}")
 
         signals_created = 0
-        for snippet in snippets[:10]:  # cap at 10 per scan to avoid flooding
+        for snippet in snippets[:10]:
             created = self._process_snippet(snippet, source.url, db)
             if created:
                 signals_created += 1
@@ -144,7 +173,7 @@ class LeadDiscoveryAgent:
         return signals_created
 
     def _scrape(self, url: str) -> str:
-        """Scrape and clean text from a URL using stealth browser via web_scraper module."""
+        """Scrape and clean text from a URL using web_scraper module (basic, non-stealth)."""
         try:
             from web_scraper.crawler import Crawler
             result = _run_async(Crawler().crawl(url))
@@ -153,7 +182,6 @@ class LeadDiscoveryAgent:
             logger.debug(f"[Scrape] web_scraper returned no content for {url}: {result.error}")
             return ""
         except ImportError:
-            # Fallback to basic requests if web_scraper unavailable
             import requests
             from bs4 import BeautifulSoup
             try:

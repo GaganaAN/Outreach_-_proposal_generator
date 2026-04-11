@@ -1,6 +1,6 @@
 """
 Database models for Portfolio Management, Email Tracking, Signal Classification,
-Opportunity Management, Proposal Generation, and Lead Discovery
+Opportunity Management, Proposal Generation, Lead Discovery, and Capture Management
 """
 from sqlalchemy import Column, Integer, String, Text, DateTime, Float, Boolean, ForeignKey
 from sqlalchemy.sql import func
@@ -267,4 +267,143 @@ class PastProject(Base):
             "start_year":        self.start_year,
             "is_active":         self.is_active,
             "created_at":        self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+# ── Capture Management ──────────────────────────────────────────────────────────
+
+class Solicitation(Base):
+    """
+    Pre-bid capture record — one row per discovered government solicitation.
+    Stores all 10 PRD-required qualification sections plus the bid/no-bid workflow.
+    Lifecycle: new → reviewing → bid | no_bid → proposal_generated
+    """
+    __tablename__ = "solicitations"
+
+    id                        = Column(Integer, primary_key=True, index=True)
+
+    # ── Discovery metadata ─────────────────────────────────────────────────────
+    source_url                = Column(String(1000), nullable=True)   # HigherGov listing page
+    solicitation_url          = Column(String(1000), nullable=True, unique=True)  # individual record
+    title                     = Column(String(500), nullable=True, index=True)
+    agency                    = Column(String(300), nullable=True, index=True)
+    solicitation_number       = Column(String(200), nullable=True)
+    response_deadline         = Column(String(100), nullable=True)
+    keyword_matched           = Column(String(300), nullable=True)    # which keyword triggered discovery
+
+    # ── Section 6.1 — Keyword-matched paragraph ────────────────────────────────
+    keyword_matched_paragraph = Column(Text, nullable=True)
+
+    # ── Section 6.2 — Past performance requirements (JSON object) ──────────────
+    past_performance_section  = Column(Text, nullable=True)
+
+    # ── Section 6.3 — Insurance requirements (JSON object) ────────────────────
+    insurance_section         = Column(Text, nullable=True)
+
+    # ── Section 6.4 — Certifications required (JSON list of objects) ──────────
+    certifications_section    = Column(Text, nullable=True)
+
+    # ── Section 6.5 — Licenses / registrations (JSON object) ──────────────────
+    licenses_section          = Column(Text, nullable=True)
+
+    # ── Section 6.6 — Mandatory / disqualifying requirements (JSON list) ───────
+    mandatory_requirements    = Column(Text, nullable=True)
+
+    # ── Section 6.7 — Scope match ──────────────────────────────────────────────
+    scope_match_level         = Column(String(20), nullable=True, index=True)  # High | Medium | Low
+    scope_match_percentage    = Column(Float, default=0.0)
+    scope_match_summary       = Column(Text, nullable=True)
+
+    # ── Section 6.8 — Technical requirements (JSON object) ────────────────────
+    technical_requirements    = Column(Text, nullable=True)
+
+    # ── Section 6.9 — What may help us win (JSON list of strings) ─────────────
+    what_may_help_win         = Column(Text, nullable=True)
+
+    # ── Section 6.10 — Evaluation matrix (JSON object) ────────────────────────
+    evaluation_matrix         = Column(Text, nullable=True)
+
+    # ── Raw source content ─────────────────────────────────────────────────────
+    raw_rfp_text              = Column(Text, nullable=True)           # full extracted text
+    pdf_filenames             = Column(Text, nullable=True)           # JSON list of extracted PDF names
+
+    # ── Bid / no-bid workflow ──────────────────────────────────────────────────
+    status                    = Column(String(30), default="new", index=True)
+    # new | reviewing | bid | no_bid | proposal_generated
+    bid_decision_notes        = Column(Text, nullable=True)
+
+    # ── Link to generated proposal (set after bid + generation) ───────────────
+    proposal_id               = Column(Integer, ForeignKey("proposals.id"), nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
+
+    def to_dict(self):
+        import json
+
+        def _parse(val):
+            if val is None:
+                return None
+            try:
+                return json.loads(val)
+            except Exception:
+                return val
+
+        return {
+            "id":                        self.id,
+            "source_url":                self.source_url,
+            "solicitation_url":          self.solicitation_url,
+            "title":                     self.title or "",
+            "agency":                    self.agency or "",
+            "solicitation_number":       self.solicitation_number or "",
+            "response_deadline":         self.response_deadline or "",
+            "keyword_matched":           self.keyword_matched or "",
+            # 10 qualification sections
+            "keyword_matched_paragraph": self.keyword_matched_paragraph or "",
+            "past_performance_section":  _parse(self.past_performance_section),
+            "insurance_section":         _parse(self.insurance_section),
+            "certifications_section":    _parse(self.certifications_section),
+            "licenses_section":          _parse(self.licenses_section),
+            "mandatory_requirements":    _parse(self.mandatory_requirements),
+            "scope_match_level":         self.scope_match_level or "",
+            "scope_match_percentage":    round(self.scope_match_percentage or 0.0, 1),
+            "scope_match_summary":       self.scope_match_summary or "",
+            "technical_requirements":    _parse(self.technical_requirements),
+            "what_may_help_win":         _parse(self.what_may_help_win),
+            "evaluation_matrix":         _parse(self.evaluation_matrix),
+            # raw content (omit rfp_text from list views — too large)
+            "pdf_filenames":             _parse(self.pdf_filenames) or [],
+            # workflow
+            "status":                    self.status,
+            "bid_decision_notes":        self.bid_decision_notes or "",
+            "proposal_id":               self.proposal_id,
+            "created_at":                self.created_at.isoformat() if self.created_at else None,
+            "updated_at":                self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class KeywordSet(Base):
+    """Named keyword set for capture/discovery scanning. Only one set is active at a time."""
+    __tablename__ = "keyword_sets"
+
+    id         = Column(Integer, primary_key=True, index=True)
+    name       = Column(String(100), nullable=False, unique=True)
+    keywords   = Column(Text, nullable=False, default="[]")  # JSON array of strings
+    is_active  = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    def to_dict(self):
+        import json
+        kws = []
+        try:
+            kws = json.loads(self.keywords) if self.keywords else []
+        except Exception:
+            pass
+        return {
+            "id":         self.id,
+            "name":       self.name,
+            "keywords":   kws,
+            "is_active":  self.is_active,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
         }

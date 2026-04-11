@@ -15,6 +15,8 @@ from app.api.opportunity_routes import router as opportunity_router
 from app.api.proposal_routes import router as proposal_router
 from app.api.discovery_routes import router as discovery_router
 from app.api.past_performance_routes import router as past_performance_router
+from app.api.capture_routes import router as capture_router
+from app.api.keyword_routes import router as keyword_router
 from app.database import init_db
 
 # Configure logging
@@ -86,13 +88,8 @@ async def startup_event():
         except Exception as seed_err:
             logger.warning(f"Past project seeding skipped: {seed_err}")
 
-        # Start lead discovery scheduler if enabled
-        if settings.DISCOVERY_ENABLED:
-            _start_discovery_scheduler()
-
-        # Start daily report scheduler if enabled
-        if settings.DAILY_REPORT_ENABLED:
-            _start_report_scheduler()
+        # Start all background jobs in a single scheduler
+        _start_schedulers()
 
         logger.info(f"Application ready at http://0.0.0.0:{settings.PORT}")
 
@@ -101,62 +98,63 @@ async def startup_event():
         raise
 
 
-def _start_discovery_scheduler():
-    """Start background APScheduler for lead discovery."""
+def _start_schedulers():
+    """
+    Start a single APScheduler instance with all background jobs.
+    Previously two separate BackgroundScheduler instances were created —
+    merged here to avoid resource conflicts.
+    """
     try:
         from apscheduler.schedulers.background import BackgroundScheduler
+        from apscheduler.triggers.cron import CronTrigger
         from app.services.lead_discovery import get_lead_discovery_agent
 
         scheduler = BackgroundScheduler()
         agent = get_lead_discovery_agent()
 
-        scheduler.add_job(
-            agent.run_all_sources,
-            trigger="interval",
-            hours=settings.DISCOVERY_INTERVAL_HOURS,
-            id="lead_discovery",
-            replace_existing=True,
-        )
-        scheduler.start()
-        logger.info(
-            f"✓ Lead discovery scheduler started (every {settings.DISCOVERY_INTERVAL_HOURS}h)"
-        )
+        # ── Lead discovery (interval) ──────────────────────────────────────────
+        if settings.DISCOVERY_ENABLED:
+            scheduler.add_job(
+                agent.run_all_sources,
+                trigger="interval",
+                hours=settings.DISCOVERY_INTERVAL_HOURS,
+                id="lead_discovery",
+                replace_existing=True,
+            )
+            logger.info(
+                f"✓ Lead discovery job scheduled (every {settings.DISCOVERY_INTERVAL_HOURS}h)"
+            )
+
+        # ── Daily opportunity report (cron) ────────────────────────────────────
+        if settings.DAILY_REPORT_ENABLED:
+            from app.services.report_generator import send_daily_report_email
+            from app.database import SessionLocal
+
+            def _send_report():
+                db = SessionLocal()
+                try:
+                    send_daily_report_email(db)
+                finally:
+                    db.close()
+
+            scheduler.add_job(
+                _send_report,
+                trigger=CronTrigger(hour=settings.DAILY_REPORT_SEND_HOUR, minute=0),
+                id="daily_report",
+                replace_existing=True,
+            )
+            logger.info(
+                f"✓ Daily report job scheduled (fires at {settings.DAILY_REPORT_SEND_HOUR:02d}:00 UTC)"
+            )
+
+        if settings.DISCOVERY_ENABLED or settings.DAILY_REPORT_ENABLED:
+            scheduler.start()
+            logger.info("✓ Background scheduler started")
+
     except ImportError:
-        logger.warning("APScheduler not installed — lead discovery scheduler skipped")
+        logger.warning("APScheduler not installed — background scheduler skipped")
     except Exception as e:
-        logger.warning(f"Discovery scheduler could not start: {e}")
-
-
-def _start_report_scheduler():
-    """Start daily APScheduler job to email the opportunity report."""
-    try:
-        from apscheduler.schedulers.background import BackgroundScheduler
-        from apscheduler.triggers.cron import CronTrigger
-        from app.services.report_generator import send_daily_report_email
-        from app.database import SessionLocal
-
-        def _send_report():
-            db = SessionLocal()
-            try:
-                send_daily_report_email(db)
-            finally:
-                db.close()
-
-        scheduler = BackgroundScheduler()
-        scheduler.add_job(
-            _send_report,
-            trigger=CronTrigger(hour=settings.DAILY_REPORT_SEND_HOUR, minute=0),
-            id="daily_report",
-            replace_existing=True,
-        )
-        scheduler.start()
-        logger.info(
-            f"✓ Daily report scheduler started (fires at {settings.DAILY_REPORT_SEND_HOUR:02d}:00 UTC)"
-        )
-    except ImportError:
-        logger.warning("APScheduler not installed — daily report scheduler skipped")
-    except Exception as e:
-        logger.warning(f"Daily report scheduler could not start: {e}")
+        logger.warning(f"Background scheduler could not start: {e}")
 
 
 @app.on_event("shutdown")
@@ -165,14 +163,16 @@ async def shutdown_event():
 
 
 # ── Routers ────────────────────────────────────────────────────────────────────
-app.include_router(router,              prefix="/api",       tags=["Cold Email Generator"])
-app.include_router(admin_router,        prefix="/api/admin", tags=["Admin"])
-app.include_router(email_router,        prefix="/api/admin", tags=["Email Tracking"])
-app.include_router(signal_router,       prefix="/api",       tags=["Signal Classification"])
-app.include_router(opportunity_router,  prefix="/api",       tags=["Opportunity Management"])
-app.include_router(proposal_router,     prefix="/api",       tags=["Proposal Generation"])
-app.include_router(discovery_router,         prefix="/api",       tags=["Lead Discovery"])
-app.include_router(past_performance_router,  prefix="/api/admin", tags=["Past Performance"])
+app.include_router(router,                  prefix="/api",       tags=["Cold Email Generator"])
+app.include_router(admin_router,            prefix="/api/admin", tags=["Admin"])
+app.include_router(email_router,            prefix="/api/admin", tags=["Email Tracking"])
+app.include_router(signal_router,           prefix="/api",       tags=["Signal Classification"])
+app.include_router(opportunity_router,      prefix="/api",       tags=["Opportunity Management"])
+app.include_router(proposal_router,         prefix="/api",       tags=["Proposal Generation"])
+app.include_router(discovery_router,        prefix="/api",       tags=["Lead Discovery"])
+app.include_router(past_performance_router, prefix="/api/admin", tags=["Past Performance"])
+app.include_router(capture_router,          prefix="/api/admin", tags=["Capture Management"])
+app.include_router(keyword_router,          prefix="/api/admin", tags=["Keyword Sets"])
 
 
 # ── Pages ──────────────────────────────────────────────────────────────────────

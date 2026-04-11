@@ -74,6 +74,29 @@ class Settings(BaseSettings):
     DAILY_REPORT_ENABLED: bool = False
     DAILY_REPORT_SEND_HOUR: int = 8     # 8 AM daily
 
+    # ── Capture Management (HigherGov / procurement scraping) ────────────────
+    HIGHERGOV_EMAIL: str = ""
+    HIGHERGOV_PASSWORD: str = ""
+    HIGHERGOV_LOGIN_URL: str = ""   # set in .env — e.g. https://www.highergov.com/login
+    HIGHERGOV_LISTING_URL: str = "https://www.highergov.com/contract-opportunity/"
+
+    # Comma-separated keyword groups used to filter solicitations
+    CAPTURE_KEYWORDS: str = (
+        "data engineering,cloud migration,data analytics,API integration,"
+        "DevOps,machine learning,artificial intelligence,case management,"
+        "digital transformation,managed services,software development,"
+        "database modernization,BI reporting,cybersecurity,system integration"
+    )
+
+    # Max chars of RFP text to send to LLM (replaces the old 5000-char truncation)
+    CAPTURE_MAX_TEXT_CHARS: int = 150000
+
+    # LLM provider to use for capture qualification (gemini recommended for large docs)
+    CAPTURE_LLM_PROVIDER: str = "gemini"
+
+    # Max concurrent sub-page scrapes during a capture scan
+    CAPTURE_MAX_CONCURRENT: int = 5
+
     class Config:
         env_file = ".env"
         case_sensitive = True

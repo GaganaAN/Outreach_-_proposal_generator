@@ -229,6 +229,12 @@ Relevant Portfolio / Experience:
 Past Performance (Completed Projects):
 {past_projects}
 
+Evaluation Criteria (from solicitation):
+{evaluation_matrix}
+
+Agency Signals — What May Help Win:
+{what_may_help_win}
+
 Write a structured technical proposal. Return ONLY a valid JSON object with these sections:
 
 {{
@@ -238,14 +244,118 @@ Write a structured technical proposal. Return ONLY a valid JSON object with thes
   "relevant_experience": "2-3 paragraphs citing specific past project names, outcomes, and technologies from the Past Performance section above",
   "team_structure": "description of proposed team roles and expertise",
   "timeline": "high-level project timeline with phases",
-  "why_choose_us": "3-4 bullet points on our key differentiators, referencing specific past project outcomes",
+  "why_choose_us": "3-4 bullet points on our key differentiators, referencing specific past project outcomes and directly addressing the evaluation criteria",
   "next_steps": "1 paragraph on proposed next steps"
 }}
 
 Guidelines:
 - Be specific and reference the requirements
 - In relevant_experience and why_choose_us, cite actual project titles and measurable outcomes from Past Performance
+- Structure the proposed_solution to address each evaluation factor in order of its weight
+- Weave agency signals (what_may_help_win) into the proposed_solution and why_choose_us sections
 - Keep each section focused and professional
 - Do not include pricing numbers (handled separately)
 
 Return ONLY the JSON object:"""
+
+
+# ── Capture Management ─────────────────────────────────────────────────────────
+
+CAPTURE_QUALIFICATION_PROMPT = """You are a capture analyst extracting structured qualification data from a government solicitation for Ivoyant Systems.
+
+Ivoyant Systems Profile (for scope matching):
+- Core capabilities: Data Engineering, Cloud Migration (AWS/Azure/GCP), Business Intelligence & Analytics,
+  Machine Learning / AI, API Integration, DevOps & Platform Engineering, Cybersecurity, System Modernization
+- NAICS focus: IT services, software development, data platforms, managed services
+- Company size: Mid-size IT services firm
+
+Search keyword that triggered this discovery: {keyword}
+Solicitation source URL: {solicitation_url}
+
+Full solicitation / RFP text:
+{rfp_text}
+
+Extract ALL sections below with precision. Use verbatim quotes from the document wherever "exact_wording" is requested.
+Return ONLY a valid JSON object — no markdown, no explanation.
+
+{{
+  "title": "full solicitation title",
+  "agency": "issuing agency or organization name",
+  "solicitation_number": "solicitation or RFP number, or null",
+  "response_deadline": "submission deadline date/time, or null",
+
+  "keyword_matched_paragraph": "The exact paragraph(s) from the document where the search keyword '{keyword}' appears. Copy verbatim.",
+
+  "past_performance_requirements": {{
+    "is_required": true,
+    "government_experience_required": false,
+    "description": "What type of past performance is requested",
+    "exact_wording": "Verbatim quote from RFP about past performance",
+    "conditions": ["any conditions: years, contract value, similarity, domain, number of references"]
+  }},
+
+  "insurance_requirements": {{
+    "is_mentioned": true,
+    "types": ["General Liability", "Professional Liability / E&O", "Workers Comp", "etc."],
+    "coverage_limits": "Any dollar limits or conditions stated",
+    "exact_wording": "Verbatim quote from RFP about insurance"
+  }},
+
+  "certifications_required": [
+    {{
+      "name": "FedRAMP / SOC 2 / HIPAA / StateRAMP / ISO 27001 / etc.",
+      "mandatory_or_preferred": "mandatory",
+      "timing": "at time of submission / prior to award / during performance",
+      "exact_wording": "Verbatim quote from RFP mentioning this certification"
+    }}
+  ],
+
+  "licenses_registrations": {{
+    "licenses": ["any licenses required to bid or perform"],
+    "registrations": ["SAM.gov, state registrations, any other required registrations"],
+    "preconditions": ["any formal preconditions bidder must satisfy before submission"],
+    "exact_wording": "Verbatim quote from RFP about licenses/registrations"
+  }},
+
+  "mandatory_disqualifying_requirements": [
+    "List every condition that would disqualify Ivoyant if not met.",
+    "Include: mandatory government past performance, mandatory certifications, mandatory registrations, location restrictions, mandatory experience thresholds, any must-have conditions"
+  ],
+
+  "scope_match": {{
+    "level": "High",
+    "percentage": 80,
+    "summary": "2-3 sentence explanation of how well this solicitation aligns with Ivoyant's core capabilities. Reference specific capability areas that match."
+  }},
+
+  "technical_requirements": {{
+    "work_description": "What technical work is expected from the bidder",
+    "technologies": ["list every technology, platform, system, tool, language mentioned"],
+    "integrations": ["any integrations, APIs, or system connections required"],
+    "exact_expectations": "Verbatim technical requirements text from the solicitation"
+  }},
+
+  "what_may_help_win": [
+    "Each item is a signal about what the agency values, prefers, or is looking for",
+    "Include: preferred experience, preferred technical approach, preferred delivery methodology",
+    "Include: any language signalling agency priorities, hot-button topics, or evaluation emphasis"
+  ],
+
+  "evaluation_matrix": {{
+    "factors": ["Technical Approach", "Past Performance", "Price/Cost", "etc."],
+    "scoring_criteria": "How proposals will be evaluated — best value, LPTA, points-based, etc.",
+    "technical_weight": "percentage or points allocated to technical",
+    "past_performance_weight": "percentage or points allocated to past performance",
+    "price_weight": "percentage or points allocated to price",
+    "priority_order": "Listed order of evaluation factors if stated"
+  }}
+}}
+
+Rules:
+- Use null (not empty string) for any field not found in the document
+- scope_match.level must be exactly one of: High, Medium, Low
+- scope_match.percentage must be an integer 0-100
+- certifications_required must be a list (empty list [] if none found)
+- mandatory_disqualifying_requirements must be a list (empty list [] if none found)
+- what_may_help_win must be a list (empty list [] if none found)
+- Return ONLY the JSON object, no markdown fences"""

@@ -1,5 +1,10 @@
 """
 Proposal Generation Service — generates structured technical proposals from RFP text.
+
+Two entry points:
+  generate()                  — manual RFP upload (existing behaviour, preserved)
+  generate_from_solicitation() — from a qualified Solicitation record (Capture pipeline)
+
 Uses past performance data for evidence-based proposals.
 """
 import logging
@@ -27,7 +32,8 @@ class ProposalGenerator:
             Dict with project_title, client_name, requirements list, tech_stack, etc.
         """
         try:
-            truncated = rfp_text[:5000]
+            # Increased from 5000 chars to 100000 to handle real RFP documents
+            truncated = rfp_text[:100000]
             prompt = RFP_EXTRACTION_PROMPT.format(rfp_text=truncated)
             result = self.llm_client.generate_json(prompt, provider=llm_provider)
 
@@ -202,6 +208,8 @@ class ProposalGenerator:
                 requirements=requirements_str,
                 portfolio_matches=portfolio_context,
                 past_projects=past_projects_str,
+                evaluation_matrix="Not specified",
+                what_may_help_win="[]",
             )
             proposal_sections = self.llm_client.generate_json(prompt, provider=llm_provider)
         except Exception as e:
@@ -214,6 +222,154 @@ class ProposalGenerator:
         logger.info(f"Proposal generated with {len(proposal_sections)} sections (opportunity_id={opportunity_id})")
         return {
             "extraction":       extraction,
+            "requirements":     requirements,
+            "proposal_content": proposal_sections,
+            "past_projects":    past_projects,
+        }
+
+    def generate_from_solicitation(
+        self,
+        solicitation,
+        llm_provider: Optional[str] = None,
+        db=None,
+    ) -> dict:
+        """
+        Generate a technical proposal from a qualified Solicitation record.
+
+        Differences from generate():
+        - Uses full rfp_text (no truncation beyond CAPTURE_MAX_TEXT_CHARS)
+        - Skips re-extraction: uses pre-qualified technical_requirements section
+        - Injects evaluation_matrix and what_may_help_win into the prompt
+        - Links the resulting Proposal back to the Solicitation
+
+        Args:
+            solicitation: Solicitation ORM instance (status should be 'bid')
+            llm_provider: override LLM provider
+            db:           SQLAlchemy session
+
+        Returns:
+            Dict with requirements, proposal_content, past_projects
+        """
+        logger.info(f"[ProposalGenerator] Generating from solicitation id={solicitation.id}")
+
+        # Step 1: Extract requirements from the already-qualified technical_requirements section
+        tech_req_raw = solicitation.technical_requirements
+        tech_req: dict = {}
+        if tech_req_raw:
+            try:
+                tech_req = json.loads(tech_req_raw) if isinstance(tech_req_raw, str) else tech_req_raw
+            except Exception:
+                tech_req = {}
+
+        technologies: List[str] = tech_req.get("technologies", []) or []
+        work_desc: str = tech_req.get("work_description", "") or ""
+        exact_exp: str = tech_req.get("exact_expectations", "") or ""
+
+        # Build requirements list from technical_requirements
+        requirements: List[str] = []
+        if work_desc:
+            requirements.append(work_desc)
+        if exact_exp:
+            for line in exact_exp.split("\n"):
+                line = line.strip().lstrip("•-").strip()
+                if len(line) > 20:
+                    requirements.append(line)
+        if not requirements:
+            requirements = [solicitation.title or "Requirements not specified"]
+
+        # Step 2: Past performance matching using tech stack from solicitation
+        past_projects = self._find_relevant_past_projects(technologies, requirements, db)
+
+        if db is not None and not past_projects:
+            logger.info(
+                f"[ProposalGenerator] No matching past performance for solicitation "
+                f"id={solicitation.id} — returning no_match"
+            )
+            return {
+                "no_match": True,
+                "message": (
+                    "No matching past performance data found for this solicitation's "
+                    "technology stack. Please add relevant projects in Past Performance."
+                ),
+                "solicitation_id": solicitation.id,
+                "requirements": requirements,
+            }
+
+        past_projects_str = self._format_past_projects(past_projects)
+
+        # Step 3: Portfolio matching
+        portfolio_context = "No portfolio matches found."
+        skills_to_match = requirements[:5] + technologies[:5]
+        if skills_to_match:
+            try:
+                from app.services.portfolio_matcher import get_portfolio_matcher
+                matcher = get_portfolio_matcher()
+                matches = matcher.match_skills_to_portfolio(skills_to_match, top_k=3)
+                if matches:
+                    lines = []
+                    for m in matches[:5]:
+                        projects = ", ".join(m.projects[:3])
+                        lines.append(
+                            f"- {m.skill} (score: {m.relevance_score:.2f}): "
+                            f"{projects}. Portfolio: {m.portfolio_link}"
+                        )
+                    portfolio_context = "\n".join(lines)
+            except Exception as match_err:
+                logger.warning(f"Portfolio matching skipped: {match_err}")
+
+        # Step 4: Build prompt with evaluation matrix + win signals from Solicitation
+        requirements_str = "\n".join(f"- {r}" for r in requirements) or "Not specified"
+
+        eval_matrix_raw = solicitation.evaluation_matrix
+        eval_matrix_str = "Not specified"
+        if eval_matrix_raw:
+            try:
+                em = json.loads(eval_matrix_raw) if isinstance(eval_matrix_raw, str) else eval_matrix_raw
+                if isinstance(em, dict):
+                    eval_matrix_str = (
+                        f"Factors: {', '.join(em.get('factors', []))}\n"
+                        f"Technical weight: {em.get('technical_weight', 'N/A')}\n"
+                        f"Past performance weight: {em.get('past_performance_weight', 'N/A')}\n"
+                        f"Price weight: {em.get('price_weight', 'N/A')}\n"
+                        f"Scoring: {em.get('scoring_criteria', 'N/A')}"
+                    )
+            except Exception:
+                pass
+
+        win_signals_raw = solicitation.what_may_help_win
+        win_signals_str = "[]"
+        if win_signals_raw:
+            try:
+                ws = json.loads(win_signals_raw) if isinstance(win_signals_raw, str) else win_signals_raw
+                if isinstance(ws, list):
+                    win_signals_str = "\n".join(f"- {s}" for s in ws)
+            except Exception:
+                pass
+
+        try:
+            prompt = PROPOSAL_GENERATION_PROMPT.format(
+                company_name=self.settings.COMPANY_NAME,
+                company_website=self.settings.COMPANY_WEBSITE,
+                requirements=requirements_str,
+                portfolio_matches=portfolio_context,
+                past_projects=past_projects_str,
+                evaluation_matrix=eval_matrix_str,
+                what_may_help_win=win_signals_str,
+            )
+            proposal_sections = self.llm_client.generate_json(prompt, provider=llm_provider)
+        except Exception as e:
+            logger.error(f"Proposal generation from solicitation failed: {e}")
+            proposal_sections = {
+                "executive_summary": "Unable to generate proposal. Please try again.",
+                "error": str(e),
+            }
+
+        logger.info(
+            f"[ProposalGenerator] Generated {len(proposal_sections)} sections "
+            f"from solicitation id={solicitation.id}"
+        )
+        return {
+            "solicitation_id":  solicitation.id,
             "requirements":     requirements,
             "proposal_content": proposal_sections,
             "past_projects":    past_projects,
