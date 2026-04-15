@@ -38,7 +38,7 @@ class EmailGenerationRequest(BaseModel):
     """Request model for email generation"""
     job_url: HttpUrl = Field(..., description="URL of the job posting")
     company_url: Optional[HttpUrl] = Field(None, description="Company website for AI personalization (optional)")
-    llm_provider: Optional[str] = Field(None, description="LLM to use: groq | openai | gemini (default: openai)")
+    llm_provider: Optional[str] = Field(None, description="LLM to use: groq | openai | azure_openai | gemini (default: openai)")
 
     class Config:
         json_schema_extra = {

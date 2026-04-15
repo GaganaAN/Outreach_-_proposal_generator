@@ -1,0 +1,230 @@
+First analyse the project 
+then 
+
+These are the requirements I have given to codex: it has done some of the changes in the reposidtor check whether those changes are cirrect according to the mentioned requirements:
+___________
+Need to check and update based on the requirements and issues stated here. These are all the improvements that need to be done, but make sure the current working behavior is not affected.
+
+1. Need to add OpenAPI usage for the project (credentials below):
+
+```
+AZURE_OPENAI_ENDPOINT=https://az-ai-services.cognitiveservices.azure.com/
+AZURE_OPENAI_API_KEY=
+AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4.1-mini
+AZURE_OPENAI_API_VERSION=2024-12-01-preview
+```
+
+2. Check whether keywords are hardcoded in the code. It should only use the keywords provided by users in the UI (only active ones), and only one set of keywords should be active at a time.
+
+3. Currently, max characters are hardcoded. This should not be the case. We should not truncate the data being sent to the LLM, as it results in loss of information (`CAPTURE_MAX_TEXT_CHARS=150000`).
+
+4. Ensure that the results coming from capture management and displayed in the UI are valid and derived from properly scraped data from the given websites.
+
+5. Ensure pagination link identification is happening correctly (links from every page should be captured without missing any).
+
+6. Date & time filtering: links/RFPs should be captured only after the current date (today’s date). This avoids identifying and scraping old RFPs unnecessarily, which wastes processing.
+
+7. Document attachments for identified opportunities (RFPs):
+
+   * While scraping, check if there are any attachments (docs/PDFs) for a particular RFP.
+   * If present, include them in the capture management results for that RFP.
+   * Provide a UI option for each document so that when the user clicks it, it navigates to and displays the document.
+
+8. Agency registration details should also be included if available in the RFP. These should be part of the capture management results.
+________________
+but even after scarping and all there is no captured/soloiticitaions were providing
+
+check the scrapling is correctly happening or not and what is the issue if the codex didnt do the changes properly then u do it without affecting any exsiting functionalities which were working before
+
+
+(venv) C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator>uvicorn app.main:app --port 8000         
+INFO:     Started server process [33220]
+INFO:     Waiting for application startup.
+2026-04-15 20:00:38,776 - app.main - INFO - Starting Cold Email Generator v2.0.0
+2026-04-15 20:00:38,796 - app.main - INFO - ✓ Database initialized (all tables created)
+2026-04-15 20:00:38,797 - app.core.llm_client - INFO - MultiLLMClient initialized. Default provider: groq
+2026-04-15 20:00:40,960 - app.core.vector_store - INFO - ChromaDB client initialized at ./chroma_db
+2026-04-15 20:02:51,772 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+2026-04-15 20:02:51,819 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/c9745ed1d9f207416be6d2e6f8de32d1f16199bf/modules.json "HTTP/1.1 200 OK"
+2026-04-15 20:02:52,149 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-04-15 20:02:52,149 - huggingface_hub.utils._http - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-04-15 20:02:52,194 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/c9745ed1d9f207416be6d2e6f8de32d1f16199bf/config_sentence_transformers.json "HTTP/1.1 200 OK"
+2026-04-15 20:02:52,214 - sentence_transformers.base.model - INFO - Loading SentenceTransformer model from sentence-transformers/all-MiniLM-L6-v2.
+2026-04-15 20:02:52,506 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+2026-04-15 20:02:52,549 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/c9745ed1d9f207416be6d2e6f8de32d1f16199bf/config_sentence_transformers.json "HTTP/1.1 200 OK"
+2026-04-15 20:02:52,854 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+2026-04-15 20:02:52,897 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/c9745ed1d9f207416be6d2e6f8de32d1f16199bf/README.md "HTTP/1.1 200 OK"
+2026-04-15 20:02:53,225 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+2026-04-15 20:02:53,269 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/c9745ed1d9f207416be6d2e6f8de32d1f16199bf/modules.json "HTTP/1.1 200 OK"
+2026-04-15 20:02:53,589 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-04-15 20:02:53,635 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/c9745ed1d9f207416be6d2e6f8de32d1f16199bf/sentence_bert_config.json "HTTP/1.1 200 OK"
+2026-04-15 20:02:53,953 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+2026-04-15 20:02:54,315 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-04-15 20:02:54,358 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/c9745ed1d9f207416be6d2e6f8de32d1f16199bf/config.json "HTTP/1.1 200 OK"
+Loading weights: 100%|████████████████████████████████████████████████████████████████████████████████████| 103/103 [00:00<00:00, 3590.57it/s]
+BertModel LOAD REPORT from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  |
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  |
+
+Notes:
+- UNEXPECTED:   can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+2026-04-15 20:02:54,924 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+2026-04-15 20:02:55,232 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-04-15 20:02:55,575 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-04-15 20:02:55,893 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-04-15 20:02:56,185 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-04-15 20:02:56,231 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/c9745ed1d9f207416be6d2e6f8de32d1f16199bf/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-04-15 20:02:56,549 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-04-15 20:02:56,589 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/c9745ed1d9f207416be6d2e6f8de32d1f16199bf/config.json "HTTP/1.1 200 OK"
+2026-04-15 20:02:56,913 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-04-15 20:02:56,979 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/c9745ed1d9f207416be6d2e6f8de32d1f16199bf/config.json "HTTP/1.1 200 OK"
+2026-04-15 20:02:57,284 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-04-15 20:02:57,339 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/c9745ed1d9f207416be6d2e6f8de32d1f16199bf/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-04-15 20:02:57,665 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/sentence-transformers/all-MiniLM-L6-v2/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-04-15 20:02:57,977 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/sentence-transformers/all-MiniLM-L6-v2/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-04-15 20:02:58,371 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-04-15 20:02:58,419 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/c9745ed1d9f207416be6d2e6f8de32d1f16199bf/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+2026-04-15 20:02:58,735 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/sentence-transformers/all-MiniLM-L6-v2 "HTTP/1.1 200 OK"
+2026-04-15 20:02:58,749 - app.core.vector_store - INFO - Using ChromaDB's SentenceTransformer embedding function
+2026-04-15 20:02:58,827 - app.core.vector_store - INFO - Loaded existing collection: portfolio_skills
+2026-04-15 20:02:58,827 - app.main - INFO - ✓ LLM client initialized
+2026-04-15 20:02:58,828 - app.main - INFO - ✓ Vector store initialized
+2026-04-15 20:02:58,868 - app.main - INFO - ✓ Portfolio documents: 0
+2026-04-15 20:02:58,885 - app.seeds.past_projects - INFO - Past projects already seeded (8 records) — skipping
+2026-04-15 20:02:59,026 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2026-04-15 20:02:59,026 - app.main - INFO - ✓ Lead discovery job scheduled (every 24h)
+2026-04-15 20:02:59,031 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts     
+2026-04-15 20:02:59,031 - app.main - INFO - ✓ Daily report job scheduled (fires at 08:00 UTC)
+2026-04-15 20:02:59,031 - apscheduler.scheduler - INFO - Added job "LeadDiscoveryAgent.run_all_sources" to job store "default"
+2026-04-15 20:02:59,032 - apscheduler.scheduler - INFO - Added job "_start_schedulers.<locals>._send_report" to job store "default"
+2026-04-15 20:02:59,032 - apscheduler.scheduler - INFO - Scheduler started
+2026-04-15 20:02:59,034 - app.main - INFO - ✓ Background scheduler started
+2026-04-15 20:02:59,035 - app.main - INFO - Application ready at http://0.0.0.0:8000
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:60703 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61356 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60703 - "GET /api/notifications/?unread_only=true&limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55158 - "GET /api/opportunities/stats/dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55158 - "GET /api/admin/solicitations/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60703 - "GET /api/admin/solicitations/?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60703 - "GET /api/admin/keyword-sets/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64374 - "DELETE /api/admin/keyword-sets/1 HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:64996 - "GET /api/notifications/?unread_only=true&limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64374 - "GET /api/admin/keyword-sets/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64374 - "GET /api/admin/keyword-sets/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61147 - "POST /api/admin/solicitations/scan-now HTTP/1.1" 200 OK
+2026-04-15 20:04:12,268 - app.services.lead_discovery - INFO - [Discovery] Procurement scan: Higher Gov (https://www.highergov.com/contract-opportunity/)
+2026-04-15 20:04:12,311 - app.services.capture_service - INFO - [Capture] Scanning procurement source: Higher Gov (https://www.highergov.com/contract-opportunity/)
+INFO:     127.0.0.1:61147 - "GET /api/notifications/?unread_only=true&limit=50 HTTP/1.1" 200 OK
+2026-04-15 20:04:13,431 - app.services.stealth_crawler - INFO - [StealthCrawler] Starting persistent stealth session
+INFO:     127.0.0.1:62951 - "GET /api/admin/solicitations/?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61147 - "GET /api/admin/solicitations/stats HTTP/1.1" 200 OK
+2026-04-15 20:04:30,874 - httpx - INFO - HTTP Request: GET https://www.highergov.com/signin/ "HTTP/1.1 200 OK"
+2026-04-15 20:04:39,567 - app.services.stealth_crawler - INFO - [StealthCrawler] HigherGov login successful
+[2026-04-15 20:04:39] INFO: Fetched (200) <GET https://www.highergov.com/dashboard/> (referer: https://www.google.com/)
+2026-04-15 20:04:39,667 - scrapling - INFO - Fetched (200) <GET https://www.highergov.com/dashboard/> (referer: https://www.google.com/)
+2026-04-15 20:04:39,696 - app.services.stealth_crawler - INFO - [StealthCrawler] Collecting links from: https://www.highergov.com/contract-opportunity/
+2026-04-15 20:04:39,828 - app.services.stealth_crawler - INFO - [StealthCrawler] Opening listing page: https://www.highergov.com/contract-opportunity/
+INFO:     127.0.0.1:62498 - "GET /api/notifications/?unread_only=true&limit=50 HTTP/1.1" 200 OK
+2026-04-15 20:04:44,238 - app.services.stealth_crawler - INFO - [StealthCrawler] Pagination: 50 page(s) detected
+2026-04-15 20:04:49,795 - app.services.stealth_crawler - INFO - [StealthCrawler] DataTables API found: https://www.highergov.com/ajax_datatable/datatable_opportunity_search/
+2026-04-15 20:04:49,837 - app.services.stealth_crawler - INFO - [StealthCrawler] Fetching pages 3-50 via DataTables POST API
+INFO:     127.0.0.1:64563 - "GET /api/notifications/?unread_only=true&limit=50 HTTP/1.1" 200 OK
+2026-04-15 20:05:14,652 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:14,873 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:14,902 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:14,911 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:14,935 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:14,947 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:14,977 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:14,995 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:15,012 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:15,029 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:15,065 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:15,091 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:15,094 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:15,098 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:15,109 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:15,144 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:15,152 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:15,161 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:15,163 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:15,175 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:15,226 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:15,240 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:15,273 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:15,290 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:15,345 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:15,410 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:15,442 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:15,680 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:16,404 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:16,500 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:17,341 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:17,735 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:17,750 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:17,809 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:17,953 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:18,068 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:18,074 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:18,186 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:18,195 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:18,811 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:18,963 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:18,967 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:19,119 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:19,261 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:19,305 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:19,343 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:19,427 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:19,691 - httpx - INFO - HTTP Request: POST https://www.highergov.com/ajax_datatable/datatable_opportunity_search/ "HTTP/1.1 200 OK"
+2026-04-15 20:05:19,729 - app.services.stealth_crawler - INFO - [StealthCrawler] Total unique links found: 183
+2026-04-15 20:05:19,731 - app.services.stealth_crawler - INFO - [StealthCrawler] Keyword filter '['application modernization', 'system migration', 're-platforming', 'cloud migration', 'legacy modernization', 'application transformation', 'legacy application modernization', 'application migration services', 'digital modernization']': 20 / 183 links matched
+[2026-04-15 20:05:25] INFO: Fetched (200) <GET https://www.highergov.com/contract-opportunity/usm-paris-france-19aqmm26r0025-o-f9996/> (referer: https://www.google.com/)
+2026-04-15 20:05:25,671 - scrapling - INFO - Fetched (200) <GET https://www.highergov.com/contract-opportunity/usm-paris-france-19aqmm26r0025-o-f9996/> (referer: https://www.google.com/)
+[2026-04-15 20:05:34] INFO: Fetched (200) <GET https://www.highergov.com/contract-opportunity/f-2026-tfd-fuels-herbicide-application-140l2626q0020-k-2ca45/> (referer: https://www.google.com/)
+2026-04-15 20:05:34,055 - scrapling - INFO - Fetched (200) <GET https://www.highergov.com/contract-opportunity/f-2026-tfd-fuels-herbicide-application-140l2626q0020-k-2ca45/> (referer: https://www.google.com/)
+[2026-04-15 20:05:37] INFO: Fetched (200) <GET https://www.highergov.com/contract-opportunity/z1lz-621-26-s-006-campus-wide-stripping-painti-36c24926b0004-p-0cb62/> (referer: https://www.google.com/)
+2026-04-15 20:05:37,681 - scrapling - INFO - Fetched (200) <GET https://www.highergov.com/contract-opportunity/z1lz-621-26-s-006-campus-wide-stripping-painti-36c24926b0004-p-0cb62/> (referer: https://www.google.com/)
+[2026-04-15 20:05:42] INFO: Fetched (200) <GET https://www.highergov.com/contract-opportunity/latch-assy-conveyor-aircraft-hercules-c-130-nsn-spe4a726r0552-p-e1107/> (referer: https://www.google.com/)
+2026-04-15 20:05:42,443 - scrapling - INFO - Fetched (200) <GET https://www.highergov.com/contract-opportunity/latch-assy-conveyor-aircraft-hercules-c-130-nsn-spe4a726r0552-p-e1107/> (referer: https://www.google.com/)
+INFO:     127.0.0.1:50806 - "GET /api/notifications/?unread_only=true&limit=50 HTTP/1.1" 200 OK
+[2026-04-15 20:05:44] INFO: Fetched (200) <GET https://www.highergov.com/contract-opportunity/maritime-coms-notice-of-tentative-acquisition-stra-n6134026r1014-p-a4e9d/> (referer: https://www.google.com/)
+2026-04-15 20:05:44,618 - scrapling - INFO - Fetched (200) <GET https://www.highergov.com/contract-opportunity/maritime-coms-notice-of-tentative-acquisition-stra-n6134026r1014-p-a4e9d/> (referer: https://www.google.com/)
+[2026-04-15 20:05:52] INFO: Fetched (200) <GET https://www.highergov.com/contract-opportunity/paint-booth-pr-001472-k-b9390/> (referer: https://www.google.com/)
+2026-04-15 20:05:52,440 - scrapling - INFO - Fetched (200) <GET https://www.highergov.com/contract-opportunity/paint-booth-pr-001472-k-b9390/> (referer: https://www.google.com/)
+[2026-04-15 20:05:54] INFO: Fetched (200) <GET https://www.highergov.com/contract-opportunity/construction-of-the-medium-landing-ship-lsm-blo-n00024-26-c-2430-u-4e104/> (referer: https://www.google.com/)
+2026-04-15 20:05:54,463 - scrapling - INFO - Fetched (200) <GET https://www.highergov.com/contract-opportunity/construction-of-the-medium-landing-ship-lsm-blo-n00024-26-c-2430-u-4e104/> (referer: https://www.google.com/)
+[2026-04-15 20:06:04] INFO: Fetched (200) <GET https://www.highergov.com/contract-opportunity/j-noaa-ship-oregon-ii-replacement-rescue-boat-1305m226q0051-o-a9cdf/> (referer: https://www.google.com/)
+2026-04-15 20:06:04,438 - scrapling - INFO - Fetched (200) <GET https://www.highergov.com/contract-opportunity/j-noaa-ship-oregon-ii-replacement-rescue-boat-1305m226q0051-o-a9cdf/> (referer: https://www.google.com/)
+[2026-04-15 20:06:08] INFO: Fetched (200) <GET https://www.highergov.com/contract-opportunity/nsn-1630-013312589-wheel-landing-gear-part-numb-spe4a726r0543-p-0cba0/> (referer: https://www.google.com/)
+2026-04-15 20:06:08,096 - scrapling - INFO - Fetched (200) <GET https://www.highergov.com/contract-opportunity/nsn-1630-013312589-wheel-landing-gear-part-numb-spe4a726r0543-p-0cba0/> (referer: https://www.google.com/)
+INFO:     127.0.0.1:58930 - "GET /api/notifications/?unread_only=true&limit=50 HTTP/1.1" 200 OK
+[2026-04-15 20:06:18] INFO: Fetched (200) <GET https://www.highergov.com/contract-opportunity/secure-content-management-and-collaboration-platfo-101926a0161-r-f84ff/> (referer: https://www.google.com/)
+2026-04-15 20:06:18,977 - scrapling - INFO - Fetched (200) <GET https://www.highergov.com/contract-opportunity/secure-content-management-and-collaboration-platfo-101926a0161-r-f84ff/> (referer: https://www.google.com/)
+[2026-04-15 20:06:21] INFO: Fetched (200) <GET https://www.highergov.com/contract-opportunity/cleaning-comp-slvt-n0010426qab47-o-28183/> (referer: https://www.google.com/)
+2026-04-15 20:06:21,093 - scrapling - INFO - Fetched (200) <GET https://www.highergov.com/contract-opportunity/cleaning-comp-slvt-n0010426qab47-o-28183/> (referer: https://www.google.com/)
+[2026-04-15 20:06:23] INFO: Fetched (200) <GET https://www.highergov.com/contract-opportunity/program-executive-office-peo-defense-healthcare-ht003826re001-k-feb02/> (referer: https://www.google.com/)
+2026-04-15 20:06:23,904 - scrapling - INFO - Fetched (200) <GET https://www.highergov.com/contract-opportunity/program-executive-office-peo-defense-healthcare-ht003826re001-k-feb02/> (referer: https://www.google.com/)
+[2026-04-15 20:06:26] INFO: Fetched (200) <GET https://www.highergov.com/contract-opportunity/nsn-5315-01-537-4652-pin-blade-solid-wsdc-40a-spe4a525r0205-u-8eaa5/> (referer: https://www.google.com/)
+2026-04-15 20:06:26,070 - scrapling - INFO - Fetched (200) <GET https://www.highergov.com/contract-opportunity/nsn-5315-01-537-4652-pin-blade-solid-wsdc-40a-spe4a525r0205-u-8eaa5/> (referer: https://www.google.com/)
+[2026-04-15 20:06:35] INFO: Fetched (200) <GET https://www.highergov.com/contract-opportunity/architect-engineer-services-for-petroleum-oils-an-n6247025r0010-k-52164/> (referer: https://www.google.com/)
+2026-04-15 20:06:35,972 - scrapling - INFO - Fetched (200) <GET https://www.highergov.com/contract-opportunity/architect-engineer-services-for-petroleum-oils-an-n6247025r0010-k-52164/> (referer: https://www.google.com/)
+[2026-04-15 20:06:38] INFO: Fetched (200) <GET https://www.highergov.com/contract-opportunity/intent-to-award-a-sole-source-contract-to-global-m-panngb-26-p-0000033111-s-c196b/> (referer: https://www.google.com/)
+2026-04-15 20:06:38,752 - scrapling - INFO - Fetched (200) <GET https://www.highergov.com/contract-opportunity/intent-to-award-a-sole-source-contract-to-global-m-panngb-26-p-0000033111-s-c196b/> (referer: https://www.google.com/)
+INFO:     127.0.0.1:56726 - "GET /api/notifications/?unread_only=true&limit=50 HTTP/1.1" 200 OK
+[2026-04-15 20:06:49] INFO: Fetched (200) <GET https://www.highergov.com/contract-opportunity/iowa-national-guard-technical-instruction-services-w912lp-26-r-0006-k-e2b98/> (referer: https://www.google.com/)
+2026-04-15 20:06:49,199 - scrapling - INFO - Fetched (200) <GET https://www.highergov.com/contract-opportunity/iowa-national-guard-technical-instruction-services-w912lp-26-r-0006-k-e2b98/> (referer: https://www.google.com/)
+[2026-04-15 20:06:52] INFO: Fetched (200) <GET https://www.highergov.com/contract-opportunity/nsn-4910015368795-kit-biennial-pm-cl26068292-r-37c74/> (referer: https://www.google.com/)
+2026-04-15 20:06:52,081 - scrapling - INFO - Fetched (200) <GET https://www.highergov.com/contract-opportunity/nsn-4910015368795-kit-biennial-pm-cl26068292-r-37c74/> (referer: https://www.google.com/)
+[2026-04-15 20:06:54] INFO: Fetched (200) <GET https://www.highergov.com/contract-opportunity/prime-power-school-academic-training-services-idiq-w912hq26ra006-k-4c9e4/> (referer: https://www.google.com/)
+2026-04-15 20:06:54,850 - scrapling - INFO - Fetched (200) <GET https://www.highergov.com/contract-opportunity/prime-power-school-academic-training-services-idiq-w912hq26ra006-k-4c9e4/> (referer: https://www.google.com/)
+[2026-04-15 20:07:05] INFO: Fetched (200) <GET https://www.highergov.com/contract-opportunity/m-provide-husbandry-services-to-the-noaa-ship-pis-1333mk26q0031-k-d5198/> (referer: https://www.google.com/)
+2026-04-15 20:07:05,264 - scrapling - INFO - Fetched (200) <GET https://www.highergov.com/contract-opportunity/m-provide-husbandry-services-to-the-noaa-ship-pis-1333mk26q0031-k-d5198/> (referer: https://www.google.com/)
+[2026-04-15 20:07:15] INFO: Fetched (200) <GET https://www.highergov.com/contract-opportunity/p-cable-raceway-removal-140g0126q0068-o-955f5/> (referer: https://www.google.com/)
+2026-04-15 20:07:15,441 - scrapling - INFO - Fetched (200) <GET https://www.highergov.com/contract-opportunity/p-cable-raceway-removal-140g0126q0068-o-955f5/> (referer: https://www.google.com/)
+2026-04-15 20:07:15,501 - app.services.capture_service - INFO - [Capture] Created 0 new solicitation(s) from Higher Gov
+2026-04-15 20:07:15,521 - app.api.capture_routes - INFO - [Capture] Scanned 'Higher Gov': 0 solicitation(s) created

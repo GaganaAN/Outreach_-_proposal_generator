@@ -20,6 +20,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
+from app.core.keywords import normalize_keywords
 from app.database import get_db
 from app.models import KeywordSet
 
@@ -86,9 +87,10 @@ async def create_keyword_set(
     if payload.is_active:
         db.query(KeywordSet).update({"is_active": False})
 
+    normalized_keywords = normalize_keywords(payload.keywords)
     ks = KeywordSet(
         name=name,
-        keywords=json.dumps(payload.keywords),
+        keywords=json.dumps(normalized_keywords),
         is_active=payload.is_active,
     )
     db.add(ks)
@@ -134,7 +136,7 @@ async def update_keyword_set(
         ks.name = name
 
     if payload.keywords is not None:
-        ks.keywords = json.dumps(payload.keywords)
+        ks.keywords = json.dumps(normalize_keywords(payload.keywords))
 
     try:
         db.commit()

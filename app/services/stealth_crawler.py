@@ -20,10 +20,34 @@ logger = logging.getLogger(__name__)
 
 # ── PDF helpers (ported from Scrapling/pdf_extractor.py) ──────────────────────
 
-def _find_pdf_links(markdown: str) -> List[Tuple[str, str]]:
-    """Return list of (display_name, url) for every PDF link in Markdown."""
-    pattern = r'\[([^\]]+\.pdf[^\]]*)\]\(([^)]+)\)'
-    return re.findall(pattern, markdown, re.IGNORECASE)
+ATTACHMENT_EXTENSIONS = ("pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "zip")
+
+
+def _find_attachment_links(markdown: str, base_url: str) -> List[Dict[str, str]]:
+    """Return normalized attachment metadata from Markdown links."""
+    matches = re.findall(r'\[([^\]]+)\]\(([^)]+)\)', markdown or "", re.IGNORECASE)
+    attachments: List[Dict[str, str]] = []
+
+    for display_name, raw_url in matches:
+        ext_match = re.search(r'\.([A-Za-z0-9]+)(?:$|[?#])', raw_url or "")
+        ext = ext_match.group(1).lower() if ext_match else ""
+        if ext not in ATTACHMENT_EXTENSIONS:
+            continue
+        absolute_url = urljoin(base_url, raw_url)
+        attachments.append({
+            "name": display_name.strip() or absolute_url.rsplit("/", 1)[-1],
+            "url": absolute_url,
+            "type": ext,
+        })
+
+    deduped: List[Dict[str, str]] = []
+    seen = set()
+    for item in attachments:
+        if item["url"] in seen:
+            continue
+        seen.add(item["url"])
+        deduped.append(item)
+    return deduped
 
 
 def _bytes_to_text(pdf_bytes: bytes) -> str:
@@ -224,7 +248,6 @@ class StealthCrawler:
         from urllib.parse import urlparse
         solicitation_patterns = [
             "/contract-opportunity/",
-            "/award/",
             "/grant-opportunity/",
             "/contract/",
             "/solicitation/",
@@ -416,12 +439,10 @@ class StealthCrawler:
                     all_links.extend(r)
 
             else:
-                # Strategy B: sequential click-through — capped at MAX_CLICK_PAGES
-                MAX_CLICK_PAGES = 5  # each page has ~25 results; 5 pages = ~125 solicitations
-                page_limit = min(total_pages, MAX_CLICK_PAGES + 2)  # +2 because pages 1&2 already done
+                # Strategy B: sequential click-through across every detected page
+                page_limit = total_pages
                 logger.info(
-                    f"[StealthCrawler] No API found — clicking pages 3-{page_limit} "
-                    f"(capped from {total_pages} to avoid timeout)"
+                    f"[StealthCrawler] No API found — clicking pages 3-{page_limit}"
                 )
                 for pg in range(3, page_limit + 1):
                     try:
@@ -538,10 +559,14 @@ class StealthCrawler:
             await pw_page.close()
 
     async def _extract_pdfs_from_markdown(
-        self, markdown: str, max_concurrent: int = 3
+        self, markdown: str, base_url: str, max_concurrent: int = 3
     ) -> Dict[str, str]:
         """Find PDF links in markdown, download + extract text for each."""
-        links = _find_pdf_links(markdown)
+        links = [
+            (item["name"], item["url"])
+            for item in _find_attachment_links(markdown, base_url)
+            if item["type"] == "pdf"
+        ]
         if not links:
             return {}
 
@@ -588,12 +613,14 @@ class StealthCrawler:
                     page = await session.fetch(url, solve_cloudflare=True, network_idle=False)
 
                 markdown = self._to_markdown(page)
-                pdf_contents = await self._extract_pdfs_from_markdown(markdown)
+                attachments = _find_attachment_links(markdown, url)
+                pdf_contents = await self._extract_pdfs_from_markdown(markdown, url)
 
                 return {
                     "url":          url,
                     "status":       page.status,
                     "markdown":     markdown,
+                    "attachments":  attachments,
                     "pdf_contents": pdf_contents,
                     "elapsed":      round(time.time() - start, 2),
                 }
@@ -601,7 +628,7 @@ class StealthCrawler:
                 logger.warning(f"[StealthCrawler] Scrape failed for {url}: {e}")
                 return {
                     "url": url, "status": 0, "markdown": "",
-                    "pdf_contents": {}, "elapsed": 0, "error": str(e),
+                    "attachments": [], "pdf_contents": {}, "elapsed": 0, "error": str(e),
                 }
 
     # ── Public: crawl a procurement listing ───────────────────────────────────

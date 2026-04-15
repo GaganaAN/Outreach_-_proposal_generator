@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     LLM_MODEL: str = "llama-3.3-70b-versatile"
     LLM_TEMPERATURE: float = 0.3
     MAX_TOKENS: int = 2000
+    AZURE_OPENAI_ENDPOINT: str = ""
+    AZURE_OPENAI_API_KEY: str = ""
+    AZURE_OPENAI_DEPLOYMENT_NAME: str = ""
+    AZURE_OPENAI_API_VERSION: str = "2024-12-01-preview"
 
     # Vector Store
     CHROMA_PERSIST_DIR: str = "./chroma_db"
@@ -52,16 +56,6 @@ class Settings(BaseSettings):
     # ── Phase 6+: Global Search (SearXNG via web_scraper) ──────────────────────
     SEARCH_ENABLED: bool = False
     SEARXNG_BASE_URL: str = "http://localhost:8080/search"
-    SEARCH_KEYWORDS: str = (
-        "RFP IT services vendor,"
-        "procurement notice data engineering,"
-        "cloud platform services tender,"
-        "software development outsourcing bid,"
-        "technology services contract opportunity,"
-        "digital transformation services request,"
-        "managed services provider RFP,"
-        "data analytics platform procurement"
-    )
 
     # ── Multi-LLM ────────────────────────────────────────────────────────────
     OPENAI_API_KEY: str = ""
@@ -81,16 +75,6 @@ class Settings(BaseSettings):
     HIGHERGOV_LISTING_URL: str = "https://www.highergov.com/contract-opportunity/"
 
     # Comma-separated keyword groups used to filter solicitations
-    CAPTURE_KEYWORDS: str = (
-        "data engineering,cloud migration,data analytics,API integration,"
-        "DevOps,machine learning,artificial intelligence,case management,"
-        "digital transformation,managed services,software development,"
-        "database modernization,BI reporting,cybersecurity,system integration"
-    )
-
-    # Max chars of RFP text to send to LLM (replaces the old 5000-char truncation)
-    CAPTURE_MAX_TEXT_CHARS: int = 150000
-
     # LLM provider to use for capture qualification (gemini recommended for large docs)
     CAPTURE_LLM_PROVIDER: str = "gemini"
 

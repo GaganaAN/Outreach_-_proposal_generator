@@ -1,7 +1,7 @@
 """
 Database configuration and session management
 """
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.config import get_settings
@@ -33,3 +33,27 @@ def get_db():
 def init_db():
     """Create all tables on startup"""
     Base.metadata.create_all(bind=engine)
+    _ensure_runtime_columns()
+
+
+def _ensure_runtime_columns():
+    """Add small backward-compatible schema updates for existing databases."""
+    inspector = inspect(engine)
+    try:
+        tables = set(inspector.get_table_names())
+    except Exception:
+        return
+
+    if "solicitations" not in tables:
+        return
+
+    existing = {col["name"] for col in inspector.get_columns("solicitations")}
+    additions = {
+        "attachment_details": "TEXT",
+        "agency_registration_details": "TEXT",
+    }
+
+    with engine.begin() as conn:
+        for column_name, sql_type in additions.items():
+            if column_name not in existing:
+                conn.execute(text(f"ALTER TABLE solicitations ADD COLUMN {column_name} {sql_type}"))

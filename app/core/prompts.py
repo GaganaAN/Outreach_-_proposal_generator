@@ -283,6 +283,13 @@ Return ONLY a valid JSON object — no markdown, no explanation.
   "agency": "issuing agency or organization name",
   "solicitation_number": "solicitation or RFP number, or null",
   "response_deadline": "submission deadline date/time, or null",
+  "agency_registration_details": {
+    "is_required": true,
+    "systems_or_portals": ["any agency or procurement portals the bidder must register in"],
+    "identifiers": ["vendor IDs, supplier numbers, cage/sam identifiers, or account numbers"],
+    "instructions": "registration steps or instructions if stated",
+    "exact_wording": "Verbatim quote from the RFP about agency-specific registration details"
+  },
 
   "keyword_matched_paragraph": "The exact paragraph(s) from the document where the search keyword '{keyword}' appears. Copy verbatim.",
 
@@ -358,4 +365,6 @@ Rules:
 - certifications_required must be a list (empty list [] if none found)
 - mandatory_disqualifying_requirements must be a list (empty list [] if none found)
 - what_may_help_win must be a list (empty list [] if none found)
+- agency_registration_details must be an object; use null values for missing subfields
+- Use only facts present in the scraped page or attached documents. Do not infer or invent values.
 - Return ONLY the JSON object, no markdown fences"""

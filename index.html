@@ -1963,7 +1963,7 @@
                                 style="width:100%;margin-top:4px;background:var(--raised);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);padding:8px;font-size:.78rem;font-family:var(--mono);resize:vertical;"
                                 placeholder="One keyword/phrase per line…"></textarea>
                             <div style="font-size:.72rem;color:var(--dim);margin-top:3px;">One keyword or phrase per
-                                line. These are used as DuckDuckGo search queries.</div>
+                                line. Saving here updates the active keyword set used by discovery and capture.</div>
                         </div>
                         <div style="display:flex;gap:8px;flex-wrap:wrap;">
                             <button class="btn btn-lime btn-sm" onclick="runGlobalSearch()" id="search-now-btn">🔍
@@ -2146,6 +2146,11 @@
                     <div id="cd-licenses" style="font-size:13px;line-height:1.6;"></div>
                 </div>
 
+                <div class="capture-section" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;">
+                    <div class="capture-section-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#e05252;margin-bottom:8px;">6.5a · Agency Registration Details</div>
+                    <div id="cd-agency-registration" style="font-size:13px;line-height:1.6;"></div>
+                </div>
+
                 <!-- Mandatory / disqualifying -->
                 <div class="capture-section" style="background:#1a0c0c;border:1px solid #7f1d1d;border-radius:10px;padding:16px;margin-bottom:14px;">
                     <div class="capture-section-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#ef4444;margin-bottom:8px;">⚠ 6.6 · Mandatory / Disqualifying Requirements</div>
@@ -2174,6 +2179,11 @@
                 <div class="capture-section" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:20px;">
                     <div class="capture-section-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#4f8eff;margin-bottom:8px;">6.10 · Evaluation Matrix</div>
                     <div id="cd-eval" style="font-size:13px;line-height:1.6;"></div>
+                </div>
+
+                <div class="capture-section" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:20px;">
+                    <div class="capture-section-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#4f8eff;margin-bottom:8px;">Documents & Attachments</div>
+                    <div id="cd-attachments" style="font-size:13px;line-height:1.6;"></div>
                 </div>
 
                 <!-- Source link -->
@@ -3575,19 +3585,15 @@
 
         /* ── Global Search ──────────────────────────────────────────── */
 
-        const DEFAULT_SEARCH_KEYWORDS = [
-            "Request for Proposal data engineering",
-            "hiring senior cloud engineer",
-            "IT services vendor RFP",
-            "Python AWS Snowflake hiring",
-            "cloud data platform procurement"
-        ];
-
-        function initSearchCard() {
-            // Populate keywords textarea from localStorage or defaults
-            const saved = localStorage.getItem('search_keywords');
-            const kw = saved ? JSON.parse(saved) : DEFAULT_SEARCH_KEYWORDS;
-            document.getElementById('search-keywords-input').value = kw.join('\n');
+        async function initSearchCard() {
+            const input = document.getElementById('search-keywords-input');
+            try {
+                const data = await adminFetch('GET', '/keyword-sets/');
+                const active = (data.keyword_sets || []).find(ks => ks.is_active);
+                input.value = active ? (active.keywords || []).join('\n') : '';
+            } catch (e) {
+                input.value = '';
+            }
 
             // Show search enabled badge (always on since backend controls it via .env)
             const badge = document.getElementById('search-status-badge');
@@ -3604,11 +3610,30 @@
         }
 
         function saveSearchKeywords() {
+            saveSearchKeywordsAsync();
+        }
+
+        async function saveSearchKeywordsAsync() {
             const raw = document.getElementById('search-keywords-input').value;
             const kw = raw.split('\n').map(k => k.trim()).filter(Boolean);
             if (!kw.length) { toast('Enter at least one keyword', 'error'); return; }
-            localStorage.setItem('search_keywords', JSON.stringify(kw));
-            toast('Keywords saved locally ✓  (update SEARCH_KEYWORDS in .env to persist across restarts)', 'success');
+            try {
+                const data = await adminFetch('GET', '/keyword-sets/');
+                const active = (data.keyword_sets || []).find(ks => ks.is_active);
+                if (active) {
+                    await adminFetch('PUT', `/keyword-sets/${active.id}`, { keywords: kw });
+                } else {
+                    await adminFetch('POST', '/keyword-sets/', {
+                        name: 'Active Search Keywords',
+                        keywords: kw,
+                        is_active: true
+                    });
+                }
+                toast('Active keyword set updated ✓', 'success');
+                loadKeywordSets();
+            } catch (e) {
+                toast('Saving keywords failed: ' + e.message, 'error');
+            }
         }
 
         async function runGlobalSearch() {
@@ -3925,6 +3950,23 @@
             return String(val);
         }
 
+        function renderAttachmentLinks(attachments) {
+            if (!Array.isArray(attachments) || !attachments.length) {
+                return '<span style="color:var(--sub);">No attachment links found</span>';
+            }
+            return '<div style="display:flex;flex-direction:column;gap:8px;">' + attachments.map(att => {
+                const name = att.name || att.url || 'Attachment';
+                const url = att.url || '#';
+                const type = (att.type || '').toUpperCase();
+                return `
+                    <a href="${url}" target="_blank" rel="noopener noreferrer"
+                        style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--fg);text-decoration:none;">
+                        <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${name}</span>
+                        <span style="font-size:11px;color:var(--sub);flex-shrink:0;">${type || 'FILE'} ↗</span>
+                    </a>`;
+            }).join('') + '</div>';
+        }
+
         /* ── Open detail modal ───────────────────────────────────────── */
         async function openCaptureDetail(id) {
             _currentSolicitationId = id;
@@ -3962,6 +4004,7 @@
                 document.getElementById('cd-insurance').innerHTML  = renderCaptureSection(s.insurance_section);
                 document.getElementById('cd-certs').innerHTML      = renderCaptureSection(s.certifications_section);
                 document.getElementById('cd-licenses').innerHTML   = renderCaptureSection(s.licenses_section);
+                document.getElementById('cd-agency-registration').innerHTML = renderCaptureSection(s.agency_registration_details);
 
                 const mandatory = s.mandatory_requirements;
                 if (Array.isArray(mandatory) && mandatory.length) {
@@ -3977,6 +4020,7 @@
                 document.getElementById('cd-tech').innerHTML  = renderCaptureSection(s.technical_requirements);
                 document.getElementById('cd-win').innerHTML   = renderCaptureSection(s.what_may_help_win);
                 document.getElementById('cd-eval').innerHTML  = renderCaptureSection(s.evaluation_matrix);
+                document.getElementById('cd-attachments').innerHTML = renderAttachmentLinks(s.attachment_details);
 
                 // Decision controls
                 document.getElementById('cd-status-select').value = s.status || 'new';
@@ -4193,6 +4237,7 @@
                 await adminFetch('POST', `/keyword-sets/${id}/activate`);
                 toast('Keyword set activated ✓', 'success');
                 loadKeywordSets();
+                initSearchCard();
             } catch (e) {
                 toast('Error: ' + e.message, 'error');
             }
@@ -4204,6 +4249,7 @@
                 await adminFetch('DELETE', `/keyword-sets/${id}`);
                 toast('Keyword set deleted', 'success');
                 loadKeywordSets();
+                initSearchCard();
             } catch (e) {
                 toast('Error: ' + e.message, 'error');
             }
@@ -4220,6 +4266,7 @@
                 await adminFetch('PUT', `/keyword-sets/${id}`, { keywords: updated });
                 input.value = '';
                 loadKeywordSets();
+                initSearchCard();
             } catch (e) {
                 toast('Error: ' + e.message, 'error');
             }
@@ -4231,6 +4278,7 @@
                 const updated = (current.keywords || []).filter(k => k !== kw);
                 await adminFetch('PUT', `/keyword-sets/${id}`, { keywords: updated });
                 loadKeywordSets();
+                initSearchCard();
             } catch (e) {
                 toast('Error: ' + e.message, 'error');
             }

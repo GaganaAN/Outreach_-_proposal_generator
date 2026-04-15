@@ -158,6 +158,7 @@ async def get_rfp_text(
         "solicitation_url": sol.solicitation_url,
         "raw_rfp_text":    sol.raw_rfp_text or "",
         "pdf_filenames":   json.loads(sol.pdf_filenames) if sol.pdf_filenames else [],
+        "attachment_details": json.loads(sol.attachment_details) if sol.attachment_details else [],
     }
 
 
@@ -244,7 +245,7 @@ async def generate_proposal_from_solicitation(
         proposal = Proposal(
             opportunity_id=None,
             rfp_filename=f"capture_{sol.solicitation_number or sol.id}",
-            rfp_text=(sol.raw_rfp_text or "")[:10000],
+            rfp_text=sol.raw_rfp_text or "",
             requirements=json.dumps(result["requirements"]),
             proposal_content=json.dumps(result["proposal_content"]),
             status="draft",

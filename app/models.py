@@ -290,6 +290,7 @@ class Solicitation(Base):
     solicitation_number       = Column(String(200), nullable=True)
     response_deadline         = Column(String(100), nullable=True)
     keyword_matched           = Column(String(300), nullable=True)    # which keyword triggered discovery
+    agency_registration_details = Column(Text, nullable=True)
 
     # ── Section 6.1 — Keyword-matched paragraph ────────────────────────────────
     keyword_matched_paragraph = Column(Text, nullable=True)
@@ -326,6 +327,7 @@ class Solicitation(Base):
     # ── Raw source content ─────────────────────────────────────────────────────
     raw_rfp_text              = Column(Text, nullable=True)           # full extracted text
     pdf_filenames             = Column(Text, nullable=True)           # JSON list of extracted PDF names
+    attachment_details        = Column(Text, nullable=True)           # JSON list of attachment objects
 
     # ── Bid / no-bid workflow ──────────────────────────────────────────────────
     status                    = Column(String(30), default="new", index=True)
@@ -358,6 +360,7 @@ class Solicitation(Base):
             "solicitation_number":       self.solicitation_number or "",
             "response_deadline":         self.response_deadline or "",
             "keyword_matched":           self.keyword_matched or "",
+            "agency_registration_details": _parse(self.agency_registration_details),
             # 10 qualification sections
             "keyword_matched_paragraph": self.keyword_matched_paragraph or "",
             "past_performance_section":  _parse(self.past_performance_section),
@@ -373,6 +376,7 @@ class Solicitation(Base):
             "evaluation_matrix":         _parse(self.evaluation_matrix),
             # raw content (omit rfp_text from list views — too large)
             "pdf_filenames":             _parse(self.pdf_filenames) or [],
+            "attachment_details":        _parse(self.attachment_details) or [],
             # workflow
             "status":                    self.status,
             "bid_decision_notes":        self.bid_decision_notes or "",
@@ -395,6 +399,7 @@ class KeywordSet(Base):
 
     def to_dict(self):
         import json
+        from app.core.keywords import normalize_keywords
         kws = []
         try:
             kws = json.loads(self.keywords) if self.keywords else []
@@ -403,7 +408,7 @@ class KeywordSet(Base):
         return {
             "id":         self.id,
             "name":       self.name,
-            "keywords":   kws,
+            "keywords":   normalize_keywords(kws),
             "is_active":  self.is_active,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }

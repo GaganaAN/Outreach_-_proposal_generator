@@ -4,7 +4,7 @@ Multi-LLM Client — supports Groq (LLaMA), OpenAI (GPT), and Google Gemini.
 All existing callers use get_llm_client().generate(prompt) which automatically
 uses DEFAULT_LLM_PROVIDER from settings (default: openai).
 
-User-facing features (email, proposal) can pass provider='groq'|'openai'|'gemini'
+User-facing features (email, proposal) can pass provider='groq'|'openai'|'azure_openai'|'gemini'
 to override the default per-request.
 """
 import json
@@ -23,6 +23,7 @@ class MultiLLMClient:
         self.settings = get_settings()
         self._groq_client = None
         self._openai_client = None
+        self._azure_openai_client = None
         self._gemini_configured = False
         logger.info(f"MultiLLMClient initialized. Default provider: {self.settings.DEFAULT_LLM_PROVIDER}")
 
@@ -43,6 +44,28 @@ class MultiLLMClient:
             from openai import OpenAI
             self._openai_client = OpenAI(api_key=self.settings.OPENAI_API_KEY)
         return self._openai_client
+
+    def _has_azure_openai(self) -> bool:
+        return bool(
+            self.settings.AZURE_OPENAI_ENDPOINT
+            and self.settings.AZURE_OPENAI_API_KEY
+            and self.settings.AZURE_OPENAI_DEPLOYMENT_NAME
+        )
+
+    def _get_azure_openai(self):
+        if self._azure_openai_client is None:
+            if not self._has_azure_openai():
+                raise ValueError(
+                    "AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY, and "
+                    "AZURE_OPENAI_DEPLOYMENT_NAME must be set in .env"
+                )
+            from openai import AzureOpenAI
+            self._azure_openai_client = AzureOpenAI(
+                api_key=self.settings.AZURE_OPENAI_API_KEY,
+                api_version=self.settings.AZURE_OPENAI_API_VERSION,
+                azure_endpoint=self.settings.AZURE_OPENAI_ENDPOINT,
+            )
+        return self._azure_openai_client
 
     def _ensure_gemini(self):
         if not self._gemini_configured:
@@ -86,6 +109,23 @@ class MultiLLMClient:
         response = client.chat.completions.create(**kwargs)
         return response.choices[0].message.content.strip()
 
+    def _generate_azure_openai(self, prompt: str, json_mode: bool, temperature: float, max_tokens: int) -> str:
+        client = self._get_azure_openai()
+        messages = [
+            {"role": "system", "content": "You are a helpful AI assistant." + (" Always respond with valid JSON." if json_mode else "")},
+            {"role": "user", "content": prompt},
+        ]
+        kwargs = dict(
+            model=self.settings.AZURE_OPENAI_DEPLOYMENT_NAME,
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+        if json_mode:
+            kwargs["response_format"] = {"type": "json_object"}
+        response = client.chat.completions.create(**kwargs)
+        return response.choices[0].message.content.strip()
+
     def _generate_gemini(self, prompt: str, json_mode: bool, temperature: float, max_tokens: int) -> str:
         self._ensure_gemini()
         import google.generativeai as genai
@@ -117,7 +157,7 @@ class MultiLLMClient:
 
         Args:
             prompt:      The input prompt.
-            provider:    'groq' | 'openai' | 'gemini' | None (uses DEFAULT_LLM_PROVIDER).
+            provider:    'groq' | 'openai' | 'azure_openai' | 'gemini' | None (uses DEFAULT_LLM_PROVIDER).
             temperature: Sampling temperature (overrides default).
             max_tokens:  Max output tokens (overrides default).
             json_mode:   Force JSON output.
@@ -126,12 +166,16 @@ class MultiLLMClient:
             Generated text string.
         """
         resolved = (provider or self.settings.DEFAULT_LLM_PROVIDER).lower()
+        if resolved == "openai" and not self.settings.OPENAI_API_KEY and self._has_azure_openai():
+            resolved = "azure_openai"
         temp = temperature if temperature is not None else self.settings.LLM_TEMPERATURE
         tokens = max_tokens if max_tokens is not None else self.settings.MAX_TOKENS
 
         try:
             if resolved == "groq":
                 result = self._generate_groq(prompt, json_mode, temp, tokens)
+            elif resolved == "azure_openai":
+                result = self._generate_azure_openai(prompt, json_mode, temp, tokens)
             elif resolved == "gemini":
                 result = self._generate_gemini(prompt, json_mode, temp, tokens)
             else:  # openai (default)

@@ -32,9 +32,7 @@ class ProposalGenerator:
             Dict with project_title, client_name, requirements list, tech_stack, etc.
         """
         try:
-            # Increased from 5000 chars to 100000 to handle real RFP documents
-            truncated = rfp_text[:100000]
-            prompt = RFP_EXTRACTION_PROMPT.format(rfp_text=truncated)
+            prompt = RFP_EXTRACTION_PROMPT.format(rfp_text=rfp_text)
             result = self.llm_client.generate_json(prompt, provider=llm_provider)
 
             # Ensure requirements is always a list
@@ -237,7 +235,7 @@ class ProposalGenerator:
         Generate a technical proposal from a qualified Solicitation record.
 
         Differences from generate():
-        - Uses full rfp_text (no truncation beyond CAPTURE_MAX_TEXT_CHARS)
+        - Uses full rfp_text without truncation
         - Skips re-extraction: uses pre-qualified technical_requirements section
         - Injects evaluation_matrix and what_may_help_win into the prompt
         - Links the resulting Proposal back to the Solicitation

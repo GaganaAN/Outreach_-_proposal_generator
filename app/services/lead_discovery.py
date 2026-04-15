@@ -77,9 +77,9 @@ class LeadDiscoveryAgent:
             logger.info("[Search] Global search is disabled (SEARCH_ENABLED=False)")
             return
 
-        keywords = [k.strip() for k in settings.SEARCH_KEYWORDS.split(",") if k.strip()]
+        keywords = self._get_active_keywords()
         if not keywords:
-            logger.info("[Search] No search keywords configured, skipping")
+            logger.info("[Search] No active keyword set configured, skipping")
             return
 
         try:
@@ -112,6 +112,23 @@ class LeadDiscoveryAgent:
             db.close()
 
         logger.info(f"[Search] Global search created {signals_created} new signal(s)")
+
+    def _get_active_keywords(self) -> List[str]:
+        from app.database import SessionLocal
+        from app.core.keywords import normalize_keywords
+        from app.models import KeywordSet
+
+        db = SessionLocal()
+        try:
+            active = db.query(KeywordSet).filter(KeywordSet.is_active == True).first()
+            if not active or not active.keywords:
+                return []
+            return normalize_keywords(json.loads(active.keywords))
+        except Exception as e:
+            logger.warning(f"[Search] Could not load active keyword set: {e}")
+            return []
+        finally:
+            db.close()
 
     def scan_source(self, source, db) -> int:
         """
