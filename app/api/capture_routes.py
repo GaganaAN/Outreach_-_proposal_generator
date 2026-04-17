@@ -294,7 +294,6 @@ async def scan_now(
 async def scan_single_url(
     payload: ScanUrlRequest,
     background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db),
     _: str = Depends(verify_admin),
 ):
     """
@@ -359,6 +358,89 @@ def _run_single_url_scan(url: str):
         logger.error(f"[Capture] Single URL scan failed for {url}: {e}")
     finally:
         db.close()
+
+
+# ── Attachment proxy download ──────────────────────────────────────────────────
+
+@router.get("/solicitations/{solicitation_id}/download-attachment")
+async def download_attachment(
+    solicitation_id: int,
+    url: str,
+    name: Optional[str] = None,
+    db: Session = Depends(get_db),
+    _: str = Depends(verify_admin),
+):
+    """
+    Proxy-download a solicitation attachment URL through the server.
+    Handles HigherGov auth-gated PDFs by using the stealth crawler session.
+    Returns the file as an attachment download.
+    """
+    from fastapi.responses import Response
+
+    sol = db.query(Solicitation).filter(Solicitation.id == solicitation_id).first()
+    if not sol:
+        raise HTTPException(status_code=404, detail="Solicitation not found")
+
+    # Resolve relative URLs against HigherGov base (stored URLs may be relative paths)
+    HIGHERGOV_BASE = "https://www.highergov.com"
+    if url.startswith("/"):
+        url = HIGHERGOV_BASE + url
+
+    # Validate the URL belongs to this solicitation's attachment_urls
+    stored = json.loads(sol.attachment_urls) if sol.attachment_urls else {}
+    # Match against both full and relative forms
+    valid_urls = set()
+    for v in stored.values():
+        valid_urls.add(v)
+        if v.startswith("/"):
+            valid_urls.add(HIGHERGOV_BASE + v)
+        elif v.startswith(HIGHERGOV_BASE):
+            valid_urls.add(v[len(HIGHERGOV_BASE):])
+    if url not in valid_urls:
+        raise HTTPException(status_code=403, detail="URL not associated with this solicitation")
+
+    filename = name or url.rstrip("/").split("/")[-1].split("?")[0] or "attachment.pdf"
+    if not filename.lower().endswith(".pdf"):
+        filename += ".pdf"
+
+    try:
+        # Try plain httpx first — only accept if response is actually a PDF file
+        import httpx
+        async with httpx.AsyncClient(follow_redirects=True, timeout=30) as client:
+            resp = await client.get(url, headers={"User-Agent": "Mozilla/5.0"})
+            ct = resp.headers.get("content-type", "")
+            is_pdf = resp.content[:4] == b"%PDF" or "pdf" in ct.lower()
+            if resp.status_code == 200 and is_pdf and len(resp.content) > 500:
+                return Response(
+                    content=resp.content,
+                    media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+                )
+    except Exception:
+        pass
+
+    # Fallback: use stealth crawler (handles auth-gated PDFs)
+    try:
+        from app.services.stealth_crawler import get_stealth_crawler, run_async
+        crawler = get_stealth_crawler()
+        pdf_bytes = run_async(crawler._fetch_pdf_bytes(url))
+        if pdf_bytes:
+            return Response(
+                content=pdf_bytes,
+                media_type="application/pdf",
+                headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+            )
+    except Exception as e:
+        logger.error(f"[Capture] Attachment download failed for {url}: {e}")
+
+    raise HTTPException(
+        status_code=502,
+        detail=(
+            "This document requires HigherGov login. "
+            "Click 'Open URL ↗' to view it on HigherGov after logging in — "
+            "the full text was already extracted and saved in the Raw RFP Text section."
+        )
+    )
 
 
 # ── Delete ─────────────────────────────────────────────────────────────────────

@@ -31,5 +31,38 @@ def get_db():
 
 
 def init_db():
-    """Create all tables on startup"""
+    """Create all tables and apply any missing column migrations on startup."""
     Base.metadata.create_all(bind=engine)
+    _apply_migrations()
+
+
+def _apply_migrations():
+    """
+    Add new columns to existing tables that pre-date the column definition.
+    SQLAlchemy create_all() only creates missing tables, not missing columns.
+    Safe to run on every startup — skips columns that already exist.
+    """
+    migrations = [
+        # (table, column, sql_type)
+        ("solicitations", "agency_registration_section", "TEXT"),
+        ("solicitations", "attachment_urls",             "TEXT"),
+        ("keyword_sets",  "is_active",                   "BOOLEAN DEFAULT 0"),
+    ]
+    with engine.connect() as conn:
+        for table, column, col_type in migrations:
+            try:
+                existing = [
+                    row[1] for row in
+                    conn.execute(
+                        __import__("sqlalchemy").text(f"PRAGMA table_info({table})")
+                    ).fetchall()
+                ]
+                if column not in existing:
+                    conn.execute(
+                        __import__("sqlalchemy").text(
+                            f"ALTER TABLE {table} ADD COLUMN {column} {col_type}"
+                        )
+                    )
+                    conn.commit()
+            except Exception:
+                pass  # table may not exist yet — create_all above will handle it

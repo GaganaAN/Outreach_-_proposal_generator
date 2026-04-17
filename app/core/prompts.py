@@ -348,6 +348,17 @@ Return ONLY a valid JSON object — no markdown, no explanation.
     "past_performance_weight": "percentage or points allocated to past performance",
     "price_weight": "percentage or points allocated to price",
     "priority_order": "Listed order of evaluation factors if stated"
+  }},
+
+  "agency_registration": {{
+    "sam_gov_required": true,
+    "uei_required": false,
+    "cage_code_required": false,
+    "state_registration": "any state-level registration required, or null",
+    "other_registrations": ["any other portals, systems, or registrations the agency requires bidders to have"],
+    "small_business_set_aside": "HUBZone / 8(a) / WOSB / SDVOSB / VOSB / Small Business / Full and Open / null",
+    "naics_code": "primary NAICS code if stated, or null",
+    "exact_wording": "Verbatim quote from RFP about registration and eligibility requirements"
   }}
 }}
 
@@ -358,4 +369,5 @@ Rules:
 - certifications_required must be a list (empty list [] if none found)
 - mandatory_disqualifying_requirements must be a list (empty list [] if none found)
 - what_may_help_win must be a list (empty list [] if none found)
+- agency_registration.other_registrations must be a list (empty list [] if none found)
 - Return ONLY the JSON object, no markdown fences"""

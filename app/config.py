@@ -68,7 +68,13 @@ class Settings(BaseSettings):
     OPENAI_MODEL: str = "gpt-4o-mini"
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-1.5-flash"
-    DEFAULT_LLM_PROVIDER: str = "openai"
+    DEFAULT_LLM_PROVIDER: str = "groq"
+
+    # Azure OpenAI (uses OpenAI SDK with Azure endpoint)
+    AZURE_OPENAI_ENDPOINT: str = ""
+    AZURE_OPENAI_API_KEY: str = ""
+    AZURE_OPENAI_DEPLOYMENT_NAME: str = "gpt-4.1-mini"
+    AZURE_OPENAI_API_VERSION: str = "2024-12-01-preview"
 
     # ── Daily Opportunity Report ─────────────────────────────────────────────
     DAILY_REPORT_ENABLED: bool = False
@@ -80,19 +86,8 @@ class Settings(BaseSettings):
     HIGHERGOV_LOGIN_URL: str = ""   # set in .env — e.g. https://www.highergov.com/login
     HIGHERGOV_LISTING_URL: str = "https://www.highergov.com/contract-opportunity/"
 
-    # Comma-separated keyword groups used to filter solicitations
-    CAPTURE_KEYWORDS: str = (
-        "data engineering,cloud migration,data analytics,API integration,"
-        "DevOps,machine learning,artificial intelligence,case management,"
-        "digital transformation,managed services,software development,"
-        "database modernization,BI reporting,cybersecurity,system integration"
-    )
-
-    # Max chars of RFP text to send to LLM (replaces the old 5000-char truncation)
-    CAPTURE_MAX_TEXT_CHARS: int = 150000
-
-    # LLM provider to use for capture qualification (gemini recommended for large docs)
-    CAPTURE_LLM_PROVIDER: str = "gemini"
+    # LLM provider to use for capture qualification (azure recommended for large docs)
+    CAPTURE_LLM_PROVIDER: str = "azure"
 
     # Max concurrent sub-page scrapes during a capture scan
     CAPTURE_MAX_CONCURRENT: int = 5
@@ -100,6 +95,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "ignore"   # silently ignore unrecognised .env keys
 
 
 @lru_cache()

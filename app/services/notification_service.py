@@ -78,6 +78,39 @@ class NotificationService:
             logger.error(f"Failed to create notification: {e}")
             return None
 
+    def create_notification(self, title: str, message: str, db) -> Optional["Notification"]:
+        """Create a generic in-app notification (used by CaptureService)."""
+        try:
+            from app.models import Notification
+            notif = Notification(title=title, message=message, is_read=False, email_sent=False)
+            db.add(notif)
+            db.commit()
+            db.refresh(notif)
+            return notif
+        except Exception as e:
+            logger.error(f"Failed to create notification: {e}")
+            return None
+
+    def send_email_alert(self, subject: str, body: str) -> bool:
+        """Send a plain-text email alert (used by CaptureService)."""
+        if not self.settings.MARKETING_EMAIL or not self.settings.SMTP_HOST:
+            return False
+        try:
+            import smtplib
+            from email.mime.text import MIMEText
+            msg = MIMEText(body)
+            msg["Subject"] = subject
+            msg["From"] = self.settings.SMTP_FROM_EMAIL or self.settings.SMTP_USERNAME
+            msg["To"] = self.settings.MARKETING_EMAIL
+            with smtplib.SMTP(self.settings.SMTP_HOST, self.settings.SMTP_PORT) as s:
+                s.starttls()
+                s.login(self.settings.SMTP_USERNAME, self.settings.SMTP_PASSWORD)
+                s.sendmail(msg["From"], [msg["To"]], msg.as_string())
+            return True
+        except Exception as e:
+            logger.error(f"send_email_alert failed: {e}")
+            return False
+
     def _send_email(
         self,
         subject: str,

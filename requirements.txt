@@ -41,3 +41,4 @@ google-generativeai>=0.7.0
 
 # Daily report generation
 reportlab>=4.0.0
+python-dateutil>=2.9.0

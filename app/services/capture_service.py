@@ -46,6 +46,9 @@ class CaptureService:
         keywords = self._parse_keywords(source)
         if not keywords:
             keywords = self._get_active_keywords(db)
+        if not keywords:
+            logger.error("[Capture] Scan aborted — no active keyword set. Activate one in the Keywords panel.")
+            return 0
 
         try:
             from app.services.stealth_crawler import get_stealth_crawler, run_async
@@ -84,6 +87,9 @@ class CaptureService:
         """
         logger.info(f"[Capture] Manual scan of: {url}")
         keywords = self._get_active_keywords(db)
+        if not keywords:
+            logger.error("[Capture] Manual scan aborted — no active keyword set.")
+            return None
 
         try:
             from app.services.stealth_crawler import get_stealth_crawler, run_async
@@ -134,6 +140,14 @@ class CaptureService:
         if not extraction:
             return None
 
+        # Date gate: skip RFPs whose deadline has already passed
+        if not self._is_deadline_future(extraction.get("response_deadline")):
+            logger.info(
+                f"[Capture] Skipping {solicitation_url} — "
+                f"deadline '{extraction.get('response_deadline')}' is in the past or unparseable"
+            )
+            return None
+
         # Scope gate: skip very low-match solicitations
         scope_pct = extraction.get("scope_match", {}) or {}
         if isinstance(scope_pct, dict):
@@ -154,6 +168,7 @@ class CaptureService:
             source_url=source_url,
             raw_rfp_text=full_text,
             pdf_filenames=list(pdf_contents.keys()),
+            attachment_urls=self._extract_attachment_urls(pdf_contents),
             keyword_matched=matched_keyword,
             db=db,
         )
@@ -179,13 +194,10 @@ class CaptureService:
         from app.core.prompts import CAPTURE_QUALIFICATION_PROMPT
         from app.core.llm_client import get_llm_client
 
-        max_chars = self.settings.CAPTURE_MAX_TEXT_CHARS
-        truncated = full_text[:max_chars]
-
         prompt = CAPTURE_QUALIFICATION_PROMPT.format(
             keyword=keyword or "IT services",
             solicitation_url=solicitation_url,
-            rfp_text=truncated,
+            rfp_text=full_text,
         )
 
         provider = self.settings.CAPTURE_LLM_PROVIDER
@@ -219,6 +231,7 @@ class CaptureService:
         source_url: str,
         raw_rfp_text: str,
         pdf_filenames: List[str],
+        attachment_urls: Dict[str, str],
         keyword_matched: str,
         db,
     ):
@@ -238,6 +251,7 @@ class CaptureService:
         mandatory = extraction.get("mandatory_disqualifying_requirements")
         win_signals = extraction.get("what_may_help_win")
         eval_matrix = extraction.get("evaluation_matrix")
+        agency_reg  = extraction.get("agency_registration")
 
         sol = Solicitation(
             source_url=source_url,
@@ -259,8 +273,10 @@ class CaptureService:
             technical_requirements=json.dumps(tech) if tech is not None else None,
             what_may_help_win=json.dumps(win_signals) if win_signals is not None else None,
             evaluation_matrix=json.dumps(eval_matrix) if eval_matrix is not None else None,
-            raw_rfp_text=raw_rfp_text[:200000],   # cap stored text at 200k chars
+            agency_registration_section=json.dumps(agency_reg) if agency_reg is not None else None,
+            raw_rfp_text=raw_rfp_text,
             pdf_filenames=json.dumps(pdf_filenames),
+            attachment_urls=json.dumps(attachment_urls) if attachment_urls else None,
             status="new",
         )
 
@@ -306,8 +322,8 @@ class CaptureService:
 
     def _get_active_keywords(self, db) -> List[str]:
         """
-        Return keywords from the active KeywordSet in DB.
-        Falls back to settings.CAPTURE_KEYWORDS if none active.
+        Return keywords from the active KeywordSet in DB only.
+        Returns [] if no active set — caller should skip the scan and warn the user.
         """
         try:
             from app.models import KeywordSet
@@ -315,20 +331,64 @@ class CaptureService:
             if active:
                 import json as _json
                 kws = _json.loads(active.keywords) if active.keywords else []
-                if kws:
-                    return kws
+                return [k for k in kws if k.strip()]
+            logger.warning(
+                "[Capture] No active keyword set found. "
+                "Go to Capture → 🏷 Keywords and activate a keyword set before scanning."
+            )
         except Exception as e:
             logger.warning(f"[Capture] Could not load active keyword set: {e}")
-        return [k.strip() for k in self.settings.CAPTURE_KEYWORDS.split(",") if k.strip()]
+        return []
 
-    def _build_full_text(self, markdown: str, pdf_contents: Dict[str, str]) -> str:
+    def _build_full_text(self, markdown: str, pdf_contents: Dict[str, Any]) -> str:
+        """Build combined text from page markdown + all attached document texts."""
         parts = [markdown]
         if pdf_contents:
             parts.append("\n\n--- ATTACHED DOCUMENT CONTENTS ---")
-            for fname, text in pdf_contents.items():
-                if text and not text.startswith("[ERROR]"):
+            for fname, entry in pdf_contents.items():
+                # entry is either {"url": ..., "text": ...} (new) or a plain string (legacy)
+                text = entry.get("text", "") if isinstance(entry, dict) else entry
+                if text and not str(text).startswith("[ERROR]"):
                     parts.append(f"\nFile: {fname}\n{text}")
         return "\n".join(parts)
+
+    def _extract_attachment_urls(self, pdf_contents: Dict[str, Any]) -> Dict[str, str]:
+        """Return {display_name: url} for all successfully retrieved attachments."""
+        urls = {}
+        for fname, entry in pdf_contents.items():
+            if isinstance(entry, dict) and entry.get("url"):
+                urls[fname] = entry["url"]
+        return urls
+
+    def _is_deadline_future(self, deadline_str: Optional[str]) -> bool:
+        """
+        Return True if the deadline is today or in the future, or if it cannot be parsed
+        (err on the side of inclusion when the date format is unknown).
+        Returns False only when we can clearly confirm the deadline has passed.
+        """
+        if not deadline_str:
+            return True  # No deadline stated — include it
+        from datetime import date
+        import re
+        today = date.today()
+        # Try common date patterns
+        patterns = [
+            r'(\d{4})[/-](\d{1,2})[/-](\d{1,2})',   # 2026-05-15 or 2026/05/15
+            r'(\d{1,2})[/-](\d{1,2})[/-](\d{4})',    # 05/15/2026 or 05-15-2026
+            r'(\w+ \d{1,2},? \d{4})',                  # May 15, 2026
+            r'(\d{1,2} \w+ \d{4})',                    # 15 May 2026
+        ]
+        for pat in patterns:
+            m = re.search(pat, str(deadline_str))
+            if m:
+                try:
+                    from dateutil import parser as dateparser
+                    dt = dateparser.parse(m.group(0), fuzzy=True)
+                    if dt:
+                        return dt.date() >= today
+                except Exception:
+                    pass
+        return True  # Could not parse — include by default
 
     def _find_matched_keyword(self, text: str, keywords: List[str]) -> str:
         text_lower = text.lower()

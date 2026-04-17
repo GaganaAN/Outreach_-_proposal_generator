@@ -2176,12 +2176,26 @@
                     <div id="cd-eval" style="font-size:13px;line-height:1.6;"></div>
                 </div>
 
-                <!-- Source link -->
-                <div style="margin-bottom:20px;">
-                    <a id="cd-source-link" href="#" target="_blank"
-                        style="color:var(--accent);font-size:13px;text-decoration:underline;">
-                        View Original Solicitation ↗
-                    </a>
+                <!-- Agency Registration -->
+                <div class="capture-section" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;">
+                    <div class="capture-section-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#f0a030;margin-bottom:8px;">🏛 Agency Registration Requirements</div>
+                    <div id="cd-agency-reg" style="font-size:13px;line-height:1.6;"></div>
+                </div>
+
+                <!-- Documents & Source Links -->
+                <div class="capture-section" id="cd-documents-section" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;">
+                    <div class="capture-section-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#10b981;margin-bottom:10px;">📎 Documents & Source</div>
+                    <!-- Source link — always shown -->
+                    <div id="cd-source-row" style="margin-bottom:8px;display:none;">
+                        <a id="cd-source-link" href="#" target="_blank"
+                            style="color:var(--accent);font-size:13px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--accent);border-radius:6px;">
+                            🔗 View Solicitation on HigherGov ↗
+                        </a>
+                    </div>
+                    <!-- Attached PDFs -->
+                    <div id="cd-attachments" style="font-size:13px;line-height:1.8;"></div>
+                    <!-- Empty state -->
+                    <div id="cd-no-docs" style="font-size:13px;color:var(--sub);display:none;">No PDF attachments found — view the solicitation source page for documents.</div>
                 </div>
 
                 <!-- Bid/No-Bid actions -->
@@ -3950,9 +3964,14 @@
                 badge.textContent      = `${s.scope_match_level || 'Low'} Match  ${s.scope_match_percentage?.toFixed(0) || 0}%`;
 
                 // Source link
+                const sourceRow = document.getElementById('cd-source-row');
                 const link = document.getElementById('cd-source-link');
-                link.href = s.solicitation_url || '#';
-                link.style.display = s.solicitation_url ? 'inline' : 'none';
+                if (s.solicitation_url) {
+                    link.href = s.solicitation_url;
+                    sourceRow.style.display = 'block';
+                } else {
+                    sourceRow.style.display = 'none';
+                }
 
                 // 10 sections
                 document.getElementById('cd-keyword-para').innerHTML  = s.keyword_matched_paragraph
@@ -3978,6 +3997,39 @@
                 document.getElementById('cd-win').innerHTML   = renderCaptureSection(s.what_may_help_win);
                 document.getElementById('cd-eval').innerHTML  = renderCaptureSection(s.evaluation_matrix);
 
+                // Agency registration
+                document.getElementById('cd-agency-reg').innerHTML = renderCaptureSection(s.agency_registration_section);
+
+                // Attachments — show PDF links + proxy download buttons
+                const attachments = s.attachment_urls || {};
+                const attachNames = Object.keys(attachments);
+                const noDocsEl = document.getElementById('cd-no-docs');
+                if (attachNames.length) {
+                    noDocsEl.style.display = 'none';
+                    document.getElementById('cd-attachments').innerHTML = attachNames.map(name => {
+                        // Resolve relative URLs (stored as /document/... from HigherGov)
+                        const rawUrl = attachments[name];
+                        const fullUrl = rawUrl.startsWith('/') ? 'https://www.highergov.com' + rawUrl : rawUrl;
+                        const encodedUrl = encodeURIComponent(rawUrl);
+                        const encodedName = encodeURIComponent(name);
+                        const solId = s.id;
+                        return `<div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                            <span style="font-size:13px;">📄 ${name}</span>
+                            <button onclick="downloadAttachment(${solId}, '${encodedUrl}', '${encodedName}')"
+                               style="color:#10b981;font-size:12px;padding:3px 10px;border:1px solid #10b981;border-radius:5px;background:transparent;cursor:pointer;white-space:nowrap;">
+                                ↓ Download PDF
+                            </button>
+                            <a href="${fullUrl}" target="_blank"
+                               style="color:var(--sub);font-size:12px;text-decoration:underline;white-space:nowrap;">
+                                Open URL ↗
+                            </a>
+                        </div>`;
+                    }).join('');
+                } else {
+                    document.getElementById('cd-attachments').innerHTML = '';
+                    noDocsEl.style.display = 'block';
+                }
+
                 // Decision controls
                 document.getElementById('cd-status-select').value = s.status || 'new';
                 document.getElementById('cd-notes').value = s.bid_decision_notes || '';
@@ -3998,6 +4050,35 @@
             _currentSolicitationId = null;
             loadCaptureSolicitations();
             loadCaptureStats();
+        }
+
+        /* ── Proxy-download a solicitation attachment ─────────────────── */
+        async function downloadAttachment(solId, encodedUrl, encodedName) {
+            const url = decodeURIComponent(encodedUrl);
+            const name = decodeURIComponent(encodedName);
+            const filename = name.toLowerCase().endsWith('.pdf') ? name : name + '.pdf';
+            const proxyPath = `/solicitations/${solId}/download-attachment?url=${encodedUrl}&name=${encodedName}`;
+            try {
+                const resp = await fetch(ADMIN + proxyPath, {
+                    headers: { 'Authorization': 'Basic ' + CREDS }
+                });
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({ detail: resp.statusText }));
+                    alert('Download failed: ' + (err.detail || resp.statusText));
+                    return;
+                }
+                const blob = await resp.blob();
+                const objUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = objUrl;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(objUrl);
+            } catch (e) {
+                alert('Download error: ' + e.message);
+            }
         }
 
         /* ── Save bid/no-bid decision ────────────────────────────────── */

@@ -1,10 +1,10 @@
 """
-Multi-LLM Client — supports Groq (LLaMA), OpenAI (GPT), and Google Gemini.
+Multi-LLM Client — supports Groq (LLaMA), OpenAI (GPT), Google Gemini, and Azure OpenAI.
 
 All existing callers use get_llm_client().generate(prompt) which automatically
-uses DEFAULT_LLM_PROVIDER from settings (default: openai).
+uses DEFAULT_LLM_PROVIDER from settings.
 
-User-facing features (email, proposal) can pass provider='groq'|'openai'|'gemini'
+User-facing features (email, proposal) can pass provider='groq'|'openai'|'gemini'|'azure'
 to override the default per-request.
 """
 import json
@@ -17,12 +17,13 @@ logger = logging.getLogger(__name__)
 
 
 class MultiLLMClient:
-    """Unified LLM client supporting Groq, OpenAI, and Google Gemini."""
+    """Unified LLM client supporting Groq, OpenAI, Google Gemini, and Azure OpenAI."""
 
     def __init__(self):
         self.settings = get_settings()
         self._groq_client = None
         self._openai_client = None
+        self._azure_client = None
         self._gemini_configured = False
         logger.info(f"MultiLLMClient initialized. Default provider: {self.settings.DEFAULT_LLM_PROVIDER}")
 
@@ -43,6 +44,20 @@ class MultiLLMClient:
             from openai import OpenAI
             self._openai_client = OpenAI(api_key=self.settings.OPENAI_API_KEY)
         return self._openai_client
+
+    def _get_azure(self):
+        if self._azure_client is None:
+            if not self.settings.AZURE_OPENAI_API_KEY:
+                raise ValueError("AZURE_OPENAI_API_KEY not set in .env")
+            if not self.settings.AZURE_OPENAI_ENDPOINT:
+                raise ValueError("AZURE_OPENAI_ENDPOINT not set in .env")
+            from openai import AzureOpenAI
+            self._azure_client = AzureOpenAI(
+                api_key=self.settings.AZURE_OPENAI_API_KEY,
+                azure_endpoint=self.settings.AZURE_OPENAI_ENDPOINT,
+                api_version=self.settings.AZURE_OPENAI_API_VERSION,
+            )
+        return self._azure_client
 
     def _ensure_gemini(self):
         if not self._gemini_configured:
@@ -102,6 +117,23 @@ class MultiLLMClient:
         response = model.generate_content(prompt)
         return response.text.strip()
 
+    def _generate_azure(self, prompt: str, json_mode: bool, temperature: float, max_tokens: int) -> str:
+        client = self._get_azure()
+        messages = [
+            {"role": "system", "content": "You are a helpful AI assistant." + (" Always respond with valid JSON." if json_mode else "")},
+            {"role": "user", "content": prompt},
+        ]
+        kwargs = dict(
+            model=self.settings.AZURE_OPENAI_DEPLOYMENT_NAME,
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+        if json_mode:
+            kwargs["response_format"] = {"type": "json_object"}
+        response = client.chat.completions.create(**kwargs)
+        return response.choices[0].message.content.strip()
+
     # ── Public API (backward-compatible) ──────────────────────────────────────
 
     def generate(
@@ -117,7 +149,7 @@ class MultiLLMClient:
 
         Args:
             prompt:      The input prompt.
-            provider:    'groq' | 'openai' | 'gemini' | None (uses DEFAULT_LLM_PROVIDER).
+            provider:    'groq' | 'openai' | 'gemini' | 'azure' | None (uses DEFAULT_LLM_PROVIDER).
             temperature: Sampling temperature (overrides default).
             max_tokens:  Max output tokens (overrides default).
             json_mode:   Force JSON output.
@@ -134,7 +166,9 @@ class MultiLLMClient:
                 result = self._generate_groq(prompt, json_mode, temp, tokens)
             elif resolved == "gemini":
                 result = self._generate_gemini(prompt, json_mode, temp, tokens)
-            else:  # openai (default)
+            elif resolved == "azure":
+                result = self._generate_azure(prompt, json_mode, temp, tokens)
+            else:  # openai
                 result = self._generate_openai(prompt, json_mode, temp, tokens)
 
             logger.info(f"[LLM:{resolved}] generation ok — {len(result)} chars")

@@ -215,11 +215,14 @@ class StealthCrawler:
     @staticmethod
     def _filter_by_keywords(links: List[str], keywords: List[str]) -> List[str]:
         """
-        Keep only links that look like solicitation detail pages.
-        Keywords are matched against page *content* by CaptureService — not URLs.
-        A HigherGov solicitation URL looks like:
-          /contract-opportunity/<slug>/   or   /award/<slug>/
-        This filter drops navigation, static, and other non-solicitation URLs.
+        Keep solicitation detail page links whose URL slug contains at least one keyword.
+
+        HigherGov slugs from filtered searches are descriptive, e.g.:
+          /contract-opportunity/intra-enterprise-depot-express-package-scanning-system-abc/
+        Opaque FSC-code slugs (military hardware) look like:
+          /contract-opportunity/41-filtering-pad-air-c-spe8e826t3076-k-7fa59/
+
+        If no keywords provided, accept all solicitation-pattern URLs.
         """
         from urllib.parse import urlparse
         solicitation_patterns = [
@@ -229,12 +232,24 @@ class StealthCrawler:
             "/contract/",
             "/solicitation/",
         ]
+        # Normalise keywords for slug matching (spaces → hyphens)
+        norm_kws = [kw.lower().replace(" ", "-") for kw in keywords if kw.strip()]
+        plain_kws = [kw.lower() for kw in keywords if kw.strip()]
+
         result = []
         for link in links:
             try:
                 path = urlparse(link).path.lower()
-                # Must be a detail page (has a slug segment after the pattern)
-                if any(path.startswith(pat) and len(path) > len(pat) for pat in solicitation_patterns):
+                is_solicitation = any(
+                    path.startswith(pat) and len(path) > len(pat)
+                    for pat in solicitation_patterns
+                )
+                if not is_solicitation:
+                    continue
+                if not norm_kws:
+                    result.append(link)
+                    continue
+                if any(kw in path for kw in norm_kws) or any(kw in path for kw in plain_kws):
                     result.append(link)
             except Exception:
                 pass
@@ -362,12 +377,16 @@ class StealthCrawler:
                         api_base_url = req["url"]
                         api_params_template = req
                         logger.info(f"[StealthCrawler] DataTables API found: {api_base_url}")
+                        logger.debug(f"[StealthCrawler] DataTables POST body: {req.get('post_data', '')[:500]}")
                         break
 
                 page2_html = await pw_page.content()
                 all_links.extend(_hrefs_from_html(page2_html))
 
-            # Strategy A: replay API calls in parallel for remaining pages
+            # Strategy A: replay API calls in parallel for remaining pages.
+            # When ?q= is present, the browser JS sets the DataTables search state before
+            # clicking page 2 — so the captured POST body already includes the search filter.
+            # We use that same POST body for all subsequent pages (just changing start= offset).
             if api_base_url and api_params_template:
                 cookies = {c["name"]: c["value"] for c in await session.context.cookies()}
                 headers = {k: v for k, v in api_params_template["headers"].items()
@@ -417,7 +436,7 @@ class StealthCrawler:
 
             else:
                 # Strategy B: sequential click-through — capped at MAX_CLICK_PAGES
-                MAX_CLICK_PAGES = 5  # each page has ~25 results; 5 pages = ~125 solicitations
+                MAX_CLICK_PAGES = 5
                 page_limit = min(total_pages, MAX_CLICK_PAGES + 2)  # +2 because pages 1&2 already done
                 logger.info(
                     f"[StealthCrawler] No API found — clicking pages 3-{page_limit} "
@@ -538,26 +557,32 @@ class StealthCrawler:
             await pw_page.close()
 
     async def _extract_pdfs_from_markdown(
-        self, markdown: str, max_concurrent: int = 3
-    ) -> Dict[str, str]:
-        """Find PDF links in markdown, download + extract text for each."""
+        self, markdown: str, max_concurrent: int = 3, base_url: str = ""
+    ) -> Dict[str, Dict]:
+        """
+        Find PDF links in markdown, download + extract text for each.
+        Returns: { display_name: { "url": str, "text": str } }
+        """
         links = _find_pdf_links(markdown)
         if not links:
             return {}
+        # Resolve relative URLs so stored attachment_urls are always absolute
+        if base_url:
+            links = [(name, urljoin(base_url, url)) for name, url in links]
 
         logger.info(f"[StealthCrawler] Found {len(links)} PDF link(s) to extract")
         sem = asyncio.Semaphore(max_concurrent)
 
-        async def _process(display_name: str, doc_url: str) -> Tuple[str, str]:
+        async def _process(display_name: str, doc_url: str) -> Tuple[str, Dict]:
             async with sem:
                 try:
                     pdf_bytes = await self._fetch_pdf_bytes(doc_url)
                     if not pdf_bytes:
-                        return display_name, "[ERROR] Could not retrieve PDF bytes"
+                        return display_name, {"url": doc_url, "text": "[ERROR] Could not retrieve PDF bytes"}
                     text = _bytes_to_text(pdf_bytes)
-                    return display_name, text if text else "[EMPTY] No text extracted"
+                    return display_name, {"url": doc_url, "text": text if text else "[EMPTY] No text extracted"}
                 except Exception as e:
-                    return display_name, f"[ERROR] {e}"
+                    return display_name, {"url": doc_url, "text": f"[ERROR] {e}"}
 
         tasks = [_process(name, url) for name, url in links]
         results = await asyncio.gather(*tasks)
@@ -588,7 +613,7 @@ class StealthCrawler:
                     page = await session.fetch(url, solve_cloudflare=True, network_idle=False)
 
                 markdown = self._to_markdown(page)
-                pdf_contents = await self._extract_pdfs_from_markdown(markdown)
+                pdf_contents = await self._extract_pdfs_from_markdown(markdown, base_url=url)
 
                 return {
                     "url":          url,
@@ -625,7 +650,7 @@ class StealthCrawler:
                 sub_results: [{ url, status, markdown, pdf_contents }]
             }
         """
-        session = await self.start_session()
+        await self.start_session()
         self._semaphore = asyncio.Semaphore(self.max_concurrent)
 
         # Step 1: Authenticate
@@ -638,17 +663,43 @@ class StealthCrawler:
         logger.info(f"[StealthCrawler] Total unique links found: {len(all_links)}")
 
         # Step 3: Keyword filter
-        filtered = self._filter_by_keywords(all_links, keywords) if keywords else all_links
+        # When the listing URL already has ?q=..., the search is pre-filtered by HigherGov
+        # (the server returns only matching solicitations). HigherGov slugs are opaque FSC codes
+        # like /contract-opportunity/41-filtering-pad-air-c-spe8e826t3076/ — not keyword-readable.
+        # In that case pass [] so _filter_by_keywords accepts all solicitation-pattern URLs.
+        from urllib.parse import urlparse as _urlparse, parse_qs as _parse_qs
+        _qs = _parse_qs(_urlparse(listing_url).query)
+        has_search_query = bool(_qs.get("q"))
+        kw_filter = [] if has_search_query else keywords
+        if has_search_query:
+            logger.info(
+                f"[StealthCrawler] Listing URL has ?q= — HigherGov pre-filtered results. "
+                f"Accepting all solicitation URLs (keywords used for LLM scoring only)."
+            )
+        filtered = self._filter_by_keywords(all_links, kw_filter)
         logger.info(
-            f"[StealthCrawler] Keyword filter '{keywords}': "
-            f"{len(filtered)} / {len(all_links)} links matched"
+            f"[StealthCrawler] URL filter: {len(filtered)} / {len(all_links)} solicitation links accepted"
         )
 
-        # Step 4: Parallel scrape
+        # Step 4: Scrape each solicitation sequentially (respects semaphore, avoids mass timeout)
+        # Cap at 40 URLs to keep scan time under ~80 min; page-1 results (most relevant) come first
+        MAX_TO_SCRAPE = 40
+        if len(filtered) > MAX_TO_SCRAPE:
+            logger.info(
+                f"[StealthCrawler] Capping scrape at {MAX_TO_SCRAPE} URLs "
+                f"(skipping {len(filtered) - MAX_TO_SCRAPE} lower-priority links)"
+            )
+            filtered = filtered[:MAX_TO_SCRAPE]
+
         sub_results = []
-        if filtered:
-            tasks = [self._scrape_single(url) for url in filtered]
-            sub_results = list(await asyncio.gather(*tasks))
+        for i, url in enumerate(filtered):
+            logger.info(f"[StealthCrawler] Scraping {i+1}/{len(filtered)}: {url}")
+            try:
+                result = await asyncio.wait_for(self._scrape_single(url), timeout=120)
+                sub_results.append(result)
+            except asyncio.TimeoutError:
+                logger.warning(f"[StealthCrawler] Timeout scraping {url} — skipped")
+                sub_results.append({"url": url, "status": "timeout", "markdown": "", "pdf_contents": {}})
 
         return {
             "listing_url":    listing_url,
@@ -662,24 +713,55 @@ class StealthCrawler:
         Scrape a single solicitation URL (for manual one-off scans from UI).
         Returns: { url, status, markdown, pdf_contents }
         """
-        session = await self.start_session()
+        await self.start_session()
         if self._semaphore is None:
             self._semaphore = asyncio.Semaphore(self.max_concurrent)
         await self._ensure_auth(url)
         return await self._scrape_single(url)
 
 
-# ── Async bridge for sync callers ──────────────────────────────────────────────
+# ── Dedicated background event loop for Playwright ────────────────────────────
+# Playwright's BrowserContext is bound to the event loop it was created in.
+# FastAPI runs its own event loop, so we must keep all crawler coroutines on a
+# single dedicated background loop — never mix loops.
+
+import threading as _threading
+
+_bg_loop: Optional[asyncio.AbstractEventLoop] = None
+_bg_thread: Optional[_threading.Thread] = None
+_bg_lock = _threading.Lock()
+
+
+def _get_bg_loop() -> asyncio.AbstractEventLoop:
+    """Return (and lazily start) the persistent background event loop."""
+    global _bg_loop, _bg_thread
+    with _bg_lock:
+        if _bg_loop is None or _bg_loop.is_closed():
+            _bg_loop = asyncio.new_event_loop()
+            _bg_thread = _threading.Thread(
+                target=_bg_loop.run_forever, daemon=True, name="crawler-bg-loop"
+            )
+            _bg_thread.start()
+            logger.info("[StealthCrawler] Background event loop started")
+    return _bg_loop
+
 
 def run_async(coro):
-    """Run an async coroutine safely from a synchronous context."""
+    """
+    Run an async coroutine from any context (sync or async).
+
+    When called from FastAPI's async context (loop already running), we dispatch
+    to the dedicated crawler background loop so Playwright's BrowserContext is
+    always created and used in the same loop — avoiding the 'future belongs to a
+    different loop' error.
+    """
     try:
         loop = asyncio.get_event_loop()
         if loop.is_running():
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor() as pool:
-                future = pool.submit(asyncio.run, coro)
-                return future.result()
+            # Dispatch to the persistent background loop
+            bg_loop = _get_bg_loop()
+            future = asyncio.run_coroutine_threadsafe(coro, bg_loop)
+            return future.result(timeout=600)  # 10-minute hard cap
         return loop.run_until_complete(coro)
     except RuntimeError:
         return asyncio.run(coro)

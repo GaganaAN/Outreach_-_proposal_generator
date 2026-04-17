@@ -323,9 +323,13 @@ class Solicitation(Base):
     # ── Section 6.10 — Evaluation matrix (JSON object) ────────────────────────
     evaluation_matrix         = Column(Text, nullable=True)
 
+    # ── Agency registration details (JSON object) ─────────────────────────────
+    agency_registration_section = Column(Text, nullable=True)
+
     # ── Raw source content ─────────────────────────────────────────────────────
     raw_rfp_text              = Column(Text, nullable=True)           # full extracted text
     pdf_filenames             = Column(Text, nullable=True)           # JSON list of extracted PDF names
+    attachment_urls           = Column(Text, nullable=True)           # JSON {name: url} for each attachment
 
     # ── Bid / no-bid workflow ──────────────────────────────────────────────────
     status                    = Column(String(30), default="new", index=True)
@@ -371,8 +375,11 @@ class Solicitation(Base):
             "technical_requirements":    _parse(self.technical_requirements),
             "what_may_help_win":         _parse(self.what_may_help_win),
             "evaluation_matrix":         _parse(self.evaluation_matrix),
+            # agency registration
+            "agency_registration_section": _parse(self.agency_registration_section),
             # raw content (omit rfp_text from list views — too large)
             "pdf_filenames":             _parse(self.pdf_filenames) or [],
+            "attachment_urls":           _parse(self.attachment_urls) or {},
             # workflow
             "status":                    self.status,
             "bid_decision_notes":        self.bid_decision_notes or "",
