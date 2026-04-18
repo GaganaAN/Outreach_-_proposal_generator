@@ -287,7 +287,147 @@ class StealthCrawler:
         except Exception:
             pass  # Never let modal-dismissal crash the crawl
 
-    async def _collect_all_links_paginated(self, listing_url: str) -> List[str]:
+    async def _highergov_search(self, pw_page, keyword: str) -> str:
+        """
+        Type a keyword into HigherGov's search box and wait for the ?searchID= URL.
+        Returns the new URL after search (e.g. ?searchID=abc123), or the original URL
+        if the search input cannot be found (safe fallback — continues without filter).
+        """
+        original_url = pw_page.url
+        logger.info(f"[StealthCrawler] === KEYWORD SEARCH START ===")
+        logger.info(f"[StealthCrawler] Keyword to search: '{keyword}'")
+        logger.info(f"[StealthCrawler] Current page URL before search: {original_url}")
+
+        # Multiple selector candidates for HigherGov's keyword input.
+        # Priority order: most specific first.
+        # From page inspection: the Keywords filter panel input has no id/placeholder,
+        # but the top "Search by Name or ID" bar (id=autoComplete) is always visible.
+        # We try the dedicated keyword filter input first, then fall back to the top bar.
+        input_selectors = [
+            'input[placeholder*="keyword" i]',         # dedicated keyword filter if visible
+            '#keyword_app input',                       # Vue multiselect keyword component
+            'input[name*="keyword" i]',
+            '#autoComplete',                            # top "Search by Name or ID" bar (always visible)
+            'input[placeholder*="Search by Name" i]',
+        ]
+
+        # Log all visible inputs on the page for debugging
+        try:
+            all_inputs = await pw_page.evaluate("""() => {
+                return [...document.querySelectorAll('input')].map(el => ({
+                    type: el.type,
+                    name: el.name,
+                    placeholder: el.placeholder,
+                    id: el.id,
+                    class: el.className.substring(0, 80),
+                    visible: el.offsetParent !== null
+                }));
+            }""")
+            logger.info(f"[StealthCrawler] Inputs found on page: {all_inputs}")
+        except Exception as e:
+            logger.debug(f"[StealthCrawler] Could not enumerate inputs: {e}")
+
+        search_input = None
+        for sel in input_selectors:
+            try:
+                loc = pw_page.locator(sel).first
+                if await loc.count() > 0 and await loc.is_visible():
+                    search_input = loc
+                    logger.info(f"[StealthCrawler] ✓ Search input found with selector: '{sel}'")
+                    break
+                else:
+                    logger.debug(f"[StealthCrawler] Selector '{sel}' — not found or not visible")
+            except Exception:
+                continue
+
+        if search_input is None:
+            logger.warning(
+                "[StealthCrawler] ✗ Could not find HigherGov keyword search input — "
+                "proceeding without keyword filter (all solicitations will be scraped)"
+            )
+            return original_url
+
+        try:
+            # Clear any existing text and type the keyword
+            # Note: triple_click is not available on Scrapling's locator wrapper,
+            # so we use fill("") to clear then type() to enter the keyword
+            await search_input.click()
+            await search_input.fill(keyword)  # fill clears existing text and sets value
+
+            # Verify what was typed
+            typed_val = await search_input.input_value()
+            logger.info(f"[StealthCrawler] Value typed into search box: '{typed_val}'")
+
+            # Submit: try Enter key first, then look for a search/submit button
+            submitted = False
+            try:
+                await search_input.press("Enter")
+                submitted = True
+                logger.info("[StealthCrawler] Search submitted via Enter key")
+            except Exception:
+                pass
+
+            if not submitted:
+                for btn_sel in ['button[type="submit"]', 'button:has-text("Search")', '[aria-label*="search" i]']:
+                    try:
+                        btn = pw_page.locator(btn_sel).first
+                        if await btn.count() > 0 and await btn.is_visible():
+                            await btn.click()
+                            submitted = True
+                            logger.info(f"[StealthCrawler] Search submitted via button: '{btn_sel}'")
+                            break
+                    except Exception:
+                        continue
+
+            if not submitted:
+                logger.warning("[StealthCrawler] ✗ Could not submit search — proceeding with unfiltered results")
+                return original_url
+
+            # Wait for HigherGov to navigate to the ?searchID= URL
+            logger.info("[StealthCrawler] Waiting for HigherGov search redirect...")
+            await pw_page.wait_for_load_state("networkidle")
+            await pw_page.wait_for_timeout(1500)  # extra settle time for JS redirect
+
+            new_url = pw_page.url
+            if "searchID" in new_url:
+                # Extract the searchID and apply it to the contract-opportunity page.
+                # The global autoComplete bar redirects to /all/?searchID=xxx but we
+                # need /contract-opportunity/?searchID=xxx for contract-specific results.
+                from urllib.parse import urlparse as _up, parse_qs as _pqs, urlencode as _ue
+                parsed = _up(new_url)
+                qs = _pqs(parsed.query)
+                search_id = qs.get("searchID", [None])[0]
+
+                if search_id and "/all/" in new_url:
+                    contract_url = f"https://www.highergov.com/contract-opportunity/?searchID={search_id}"
+                    logger.info(
+                        f"[StealthCrawler] Global search redirected to /all/ — "
+                        f"re-navigating to contract-opportunity page: {contract_url}"
+                    )
+                    await pw_page.goto(contract_url, wait_until="networkidle")
+                    await pw_page.wait_for_timeout(1000)
+                    final_url = pw_page.url
+                    logger.info(f"[StealthCrawler] ✓ Contract-opportunity filtered URL: {final_url}")
+                    logger.info(f"[StealthCrawler] === KEYWORD SEARCH END ===")
+                    return final_url
+                else:
+                    logger.info(f"[StealthCrawler] ✓ Search redirect confirmed — searchID URL: {new_url}")
+            elif new_url != original_url:
+                logger.info(f"[StealthCrawler] ✓ URL changed after search: {new_url}")
+            else:
+                logger.warning(
+                    f"[StealthCrawler] ✗ URL did NOT change after search (still: {new_url}) — "
+                    "results may be unfiltered"
+                )
+
+            logger.info(f"[StealthCrawler] === KEYWORD SEARCH END ===")
+            return new_url
+
+        except Exception as e:
+            logger.warning(f"[StealthCrawler] ✗ HigherGov search interaction failed: {e} — proceeding without filter")
+            return original_url
+
+    async def _collect_all_links_paginated(self, listing_url: str, search_keyword: str = "") -> List[str]:
         """
         Handles HigherGov's JavaScript-controlled pagination.
         Strategy: open live Playwright tab, detect total pages, intercept the
@@ -319,6 +459,15 @@ class StealthCrawler:
             pw_page.on("request", on_request)
             logger.info(f"[StealthCrawler] Opening listing page: {listing_url}")
             await pw_page.goto(listing_url, wait_until="networkidle")
+
+            # If a search keyword is provided and this is HigherGov, type it into the
+            # search box so HigherGov generates a ?searchID= filtered URL.
+            # This is the only reliable way to filter — ?q= in the URL is ignored by HigherGov.
+            if search_keyword and "highergov.com" in listing_url:
+                await self._dismiss_modal_static(pw_page)
+                listing_url = await self._highergov_search(pw_page, search_keyword)
+                # Re-attach request listener on the now-filtered page (URL changed)
+                logger.info(f"[StealthCrawler] Collecting links from filtered URL: {listing_url}")
 
             # Detect total page count from visible pagination buttons
             total_pages = await pw_page.evaluate("""() => {
@@ -657,28 +806,20 @@ class StealthCrawler:
         if authenticated:
             await self._ensure_auth(listing_url)
 
-        # Step 2: Collect all links across pages
-        logger.info(f"[StealthCrawler] Collecting links from: {listing_url}")
-        all_links = await self._collect_all_links_paginated(listing_url)
+        # Step 2: Collect all links across pages.
+        # Pass the first keyword so the browser types it into HigherGov's search box,
+        # generating a real ?searchID= filtered URL — the only reliable filter on HigherGov.
+        search_keyword = keywords[0] if keywords else ""
+        logger.info(f"[StealthCrawler] Collecting links from: {listing_url} (keyword: '{search_keyword}')")
+        all_links = await self._collect_all_links_paginated(listing_url, search_keyword=search_keyword)
         logger.info(f"[StealthCrawler] Total unique links found: {len(all_links)}")
 
-        # Step 3: Keyword filter
-        # When the listing URL already has ?q=..., the search is pre-filtered by HigherGov
-        # (the server returns only matching solicitations). HigherGov slugs are opaque FSC codes
-        # like /contract-opportunity/41-filtering-pad-air-c-spe8e826t3076/ — not keyword-readable.
-        # In that case pass [] so _filter_by_keywords accepts all solicitation-pattern URLs.
-        from urllib.parse import urlparse as _urlparse, parse_qs as _parse_qs
-        _qs = _parse_qs(_urlparse(listing_url).query)
-        has_search_query = bool(_qs.get("q"))
-        kw_filter = [] if has_search_query else keywords
-        if has_search_query:
-            logger.info(
-                f"[StealthCrawler] Listing URL has ?q= — HigherGov pre-filtered results. "
-                f"Accepting all solicitation URLs (keywords used for LLM scoring only)."
-            )
-        filtered = self._filter_by_keywords(all_links, kw_filter)
+        # Step 3: Accept all /contract-opportunity/ URLs — HigherGov's search already filtered
+        # the results to the keyword via the ?searchID= URL. Slug-based keyword matching is
+        # unreliable because HigherGov slugs are opaque FSC codes, not readable text.
+        filtered = self._filter_by_keywords(all_links, [])  # [] = accept all solicitation-pattern URLs
         logger.info(
-            f"[StealthCrawler] URL filter: {len(filtered)} / {len(all_links)} solicitation links accepted"
+            f"[StealthCrawler] Solicitation links accepted: {len(filtered)} / {len(all_links)}"
         )
 
         # Step 4: Scrape each solicitation sequentially (respects semaphore, avoids mass timeout)
