@@ -281,6 +281,7 @@ class Solicitation(Base):
     __tablename__ = "solicitations"
 
     id                        = Column(Integer, primary_key=True, index=True)
+    capture_id                = Column(String(20), nullable=True, unique=True, index=True)  # e.g. CAP-2026-0001
 
     # ── Discovery metadata ─────────────────────────────────────────────────────
     source_url                = Column(String(1000), nullable=True)   # HigherGov listing page
@@ -355,6 +356,7 @@ class Solicitation(Base):
 
         return {
             "id":                        self.id,
+            "capture_id":                self.capture_id or f"CAP-{self.id}",
             "source_url":                self.source_url,
             "solicitation_url":          self.solicitation_url,
             "title":                     self.title or "",
@@ -380,12 +382,60 @@ class Solicitation(Base):
             # raw content (omit rfp_text from list views — too large)
             "pdf_filenames":             _parse(self.pdf_filenames) or [],
             "attachment_urls":           _parse(self.attachment_urls) or {},
+            # PRD Section 7 — deep links to exact source location using browser Text Fragments API.
+            # Format: {solicitation_url}#:~:text={url-encoded verbatim quote}
+            # Chrome/Edge/Safari will scroll to and highlight that exact paragraph when opened.
+            "section_source_links":      self._section_source_links(_parse),
             # workflow
             "status":                    self.status,
             "bid_decision_notes":        self.bid_decision_notes or "",
             "proposal_id":               self.proposal_id,
             "created_at":                self.created_at.isoformat() if self.created_at else None,
             "updated_at":                self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+    def _section_source_links(self, _parse_fn) -> dict:
+        """
+        Build Text Fragment URLs for each extracted section (PRD Section 7).
+        Clicking these links opens the solicitation page scrolled to the exact paragraph.
+        Browser support: Chrome, Edge, Safari (all modern versions).
+        Falls back gracefully — returns None for any section where text is unavailable.
+        """
+        import urllib.parse as _ul
+        base = self.solicitation_url or ""
+
+        def _tf(text):
+            """Build a #:~:text= fragment URL from a verbatim quote."""
+            if not base or not text:
+                return None
+            snippet = str(text).strip()
+            if not snippet:
+                return None
+            # Use first 120 chars — enough to uniquely locate the paragraph
+            return base + "#:~:text=" + _ul.quote(snippet[:120], safe="")
+
+        # Extract exact_wording from each JSON section
+        past_perf   = _parse_fn(self.past_performance_section) or {}
+        insurance   = _parse_fn(self.insurance_section) or {}
+        licenses    = _parse_fn(self.licenses_section) or {}
+        agency_reg  = _parse_fn(self.agency_registration_section) or {}
+        certs_list  = _parse_fn(self.certifications_section) or []
+
+        # For certifications (list of objects), use first cert's exact_wording
+        first_cert_wording = None
+        if isinstance(certs_list, list) and certs_list:
+            first = certs_list[0]
+            if isinstance(first, dict):
+                first_cert_wording = first.get("exact_wording")
+
+        return {
+            "keyword_paragraph":  _tf(self.keyword_matched_paragraph),
+            "past_performance":   _tf(past_perf.get("exact_wording") if isinstance(past_perf, dict) else None),
+            "insurance":          _tf(insurance.get("exact_wording") if isinstance(insurance, dict) else None),
+            "certifications":     _tf(first_cert_wording),
+            "licenses":           _tf(licenses.get("exact_wording") if isinstance(licenses, dict) else None),
+            "agency_registration": _tf(agency_reg.get("exact_wording") if isinstance(agency_reg, dict) else None),
         }
 
 

@@ -2103,7 +2103,10 @@
             <div class="modal" style="max-width:860px;max-height:92vh;overflow-y:auto;padding:32px;">
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;gap:16px;">
                     <div>
-                        <h3 id="cd-title" style="font-family:var(--serif);font-size:1.4rem;margin-bottom:4px;"></h3>
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+                            <h3 id="cd-title" style="font-family:var(--serif);font-size:1.4rem;margin:0;"></h3>
+                            <span id="cd-capture-id" style="font-family:monospace;font-size:12px;font-weight:700;color:#a855f7;background:#a855f722;border:1px solid #a855f7;padding:2px 8px;border-radius:4px;white-space:nowrap;"></span>
+                        </div>
                         <div style="color:var(--sub);font-size:13px;">
                             <span id="cd-agency"></span> &nbsp;·&nbsp;
                             <span id="cd-number"></span> &nbsp;·&nbsp;
@@ -2118,31 +2121,46 @@
 
                 <!-- Keyword match -->
                 <div class="capture-section" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;">
-                    <div class="capture-section-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);margin-bottom:8px;">6.1 · Keyword Matched Paragraph</div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                        <div class="capture-section-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);margin-bottom:0;">6.1 · Keyword Matched Paragraph</div>
+                        <a id="cd-link-keyword" href="#" target="_blank" style="display:none;font-size:11px;color:var(--accent);text-decoration:none;border:1px solid var(--accent);padding:2px 8px;border-radius:4px;white-space:nowrap;">View in source ↗</a>
+                    </div>
                     <div id="cd-keyword-para" style="font-size:13px;line-height:1.6;color:var(--fg);"></div>
                 </div>
 
                 <!-- Past performance -->
                 <div class="capture-section" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;">
-                    <div class="capture-section-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#f0a030;margin-bottom:8px;">6.2 · Past Performance Requirements</div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                        <div class="capture-section-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#f0a030;margin-bottom:0;">6.2 · Past Performance Requirements</div>
+                        <a id="cd-link-past-perf" href="#" target="_blank" style="display:none;font-size:11px;color:#f0a030;text-decoration:none;border:1px solid #f0a030;padding:2px 8px;border-radius:4px;white-space:nowrap;">View in source ↗</a>
+                    </div>
                     <div id="cd-past-perf" style="font-size:13px;line-height:1.6;"></div>
                 </div>
 
                 <!-- Insurance -->
                 <div class="capture-section" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;">
-                    <div class="capture-section-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#f0a030;margin-bottom:8px;">6.3 · Insurance Requirements</div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                        <div class="capture-section-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#f0a030;margin-bottom:0;">6.3 · Insurance Requirements</div>
+                        <a id="cd-link-insurance" href="#" target="_blank" style="display:none;font-size:11px;color:#f0a030;text-decoration:none;border:1px solid #f0a030;padding:2px 8px;border-radius:4px;white-space:nowrap;">View in source ↗</a>
+                    </div>
                     <div id="cd-insurance" style="font-size:13px;line-height:1.6;"></div>
                 </div>
 
                 <!-- Certifications -->
                 <div class="capture-section" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;">
-                    <div class="capture-section-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#e05252;margin-bottom:8px;">6.4 · Certifications Required</div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                        <div class="capture-section-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#e05252;margin-bottom:0;">6.4 · Certifications Required</div>
+                        <a id="cd-link-certs" href="#" target="_blank" style="display:none;font-size:11px;color:#e05252;text-decoration:none;border:1px solid #e05252;padding:2px 8px;border-radius:4px;white-space:nowrap;">View in source ↗</a>
+                    </div>
                     <div id="cd-certs" style="font-size:13px;line-height:1.6;"></div>
                 </div>
 
                 <!-- Licenses -->
                 <div class="capture-section" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;">
-                    <div class="capture-section-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#e05252;margin-bottom:8px;">6.5 · Licenses &amp; Registrations</div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                        <div class="capture-section-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#e05252;margin-bottom:0;">6.5 · Licenses &amp; Registrations</div>
+                        <a id="cd-link-licenses" href="#" target="_blank" style="display:none;font-size:11px;color:#e05252;text-decoration:none;border:1px solid #e05252;padding:2px 8px;border-radius:4px;white-space:nowrap;">View in source ↗</a>
+                    </div>
                     <div id="cd-licenses" style="font-size:13px;line-height:1.6;"></div>
                 </div>
 
@@ -2178,7 +2196,10 @@
 
                 <!-- Agency Registration -->
                 <div class="capture-section" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;">
-                    <div class="capture-section-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#f0a030;margin-bottom:8px;">🏛 Agency Registration Requirements</div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                        <div class="capture-section-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#f0a030;margin-bottom:0;">🏛 Agency Registration Requirements</div>
+                        <a id="cd-link-agency-reg" href="#" target="_blank" style="display:none;font-size:11px;color:#f0a030;text-decoration:none;border:1px solid #f0a030;padding:2px 8px;border-radius:4px;white-space:nowrap;">View in source ↗</a>
+                    </div>
                     <div id="cd-agency-reg" style="font-size:13px;line-height:1.6;"></div>
                 </div>
 
@@ -3877,7 +3898,8 @@
                                     ${s.title || '(No title)'}
                                 </div>
                                 <div style="font-size:12px;color:var(--sub);">
-                                    ${s.agency || ''} &nbsp;·&nbsp; Keyword: <em>${s.keyword_matched || ''}</em>
+                                    <span style="font-family:monospace;font-size:11px;color:#a855f7;font-weight:600;">${s.capture_id || ''}</span>
+                                    &nbsp;·&nbsp; ${s.agency || ''} &nbsp;·&nbsp; Keyword: <em>${s.keyword_matched || ''}</em>
                                     ${s.response_deadline ? ` &nbsp;·&nbsp; Deadline: <strong>${s.response_deadline}</strong>` : ''}
                                 </div>
                             </div>
@@ -3954,6 +3976,8 @@
                 document.getElementById('cd-agency').textContent    = s.agency || '';
                 document.getElementById('cd-number').textContent    = s.solicitation_number || '';
                 document.getElementById('cd-deadline').textContent  = s.response_deadline || 'Not specified';
+                const captureIdEl = document.getElementById('cd-capture-id');
+                if (captureIdEl) captureIdEl.textContent = s.capture_id || '';
 
                 // Scope badge
                 const st = scopeStyle(s.scope_match_level);
@@ -3999,6 +4023,22 @@
 
                 // Agency registration
                 document.getElementById('cd-agency-reg').innerHTML = renderCaptureSection(s.agency_registration_section);
+
+                // Section source links (Text Fragment deep links into HigherGov solicitation page)
+                const srcLinks = s.section_source_links || {};
+                const _setSourceLink = (elId, url) => {
+                    const el = document.getElementById(elId);
+                    if (el) {
+                        if (url) { el.href = url; el.style.display = 'inline-block'; }
+                        else { el.style.display = 'none'; }
+                    }
+                };
+                _setSourceLink('cd-link-keyword',    srcLinks.keyword_paragraph);
+                _setSourceLink('cd-link-past-perf',  srcLinks.past_performance);
+                _setSourceLink('cd-link-insurance',  srcLinks.insurance);
+                _setSourceLink('cd-link-certs',      srcLinks.certifications);
+                _setSourceLink('cd-link-licenses',   srcLinks.licenses);
+                _setSourceLink('cd-link-agency-reg', srcLinks.agency_registration);
 
                 // Attachments — show PDF links + proxy download buttons
                 const attachments = s.attachment_urls || {};

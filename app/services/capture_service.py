@@ -13,7 +13,6 @@ and also directly from capture_routes.py for manual scans.
 """
 import json
 import logging
-from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
@@ -148,6 +147,22 @@ class CaptureService:
             )
             return None
 
+        # Dedup by solicitation_number (catches same procurement on different HigherGov pages)
+        sol_number = extraction.get("solicitation_number", "") or ""
+        if sol_number.strip():
+            from app.models import Solicitation as _Sol
+            existing_by_num = (
+                db.query(_Sol)
+                .filter(_Sol.solicitation_number == sol_number.strip())
+                .first()
+            )
+            if existing_by_num:
+                logger.debug(
+                    f"[Capture] Duplicate solicitation_number '{sol_number}' skipped "
+                    f"(already id={existing_by_num.id})"
+                )
+                return None
+
         # Scope gate: skip very low-match solicitations
         scope_pct = extraction.get("scope_match", {}) or {}
         if isinstance(scope_pct, dict):
@@ -281,10 +296,17 @@ class CaptureService:
         )
 
         db.add(sol)
+        db.flush()   # get the auto-assigned id before commit
+
+        # Generate human-readable capture ID: CAP-YYYY-NNNN
+        from datetime import datetime as _dt
+        year = _dt.utcnow().year
+        sol.capture_id = f"CAP-{year}-{sol.id:04d}"
+
         db.commit()
         db.refresh(sol)
         logger.info(
-            f"[Capture] Saved solicitation id={sol.id}: "
+            f"[Capture] Saved solicitation id={sol.id} capture_id={sol.capture_id}: "
             f"'{sol.title[:60]}' | {scope_level} match ({scope_pct}%)"
         )
         return sol
@@ -298,8 +320,9 @@ class CaptureService:
         if sol.scope_match_level not in ("High", "Medium"):
             return
 
-        title = f"New {sol.scope_match_level} Match Solicitation: {sol.title[:80]}"
+        title = f"[{sol.capture_id}] New {sol.scope_match_level} Match Solicitation: {sol.title[:80]}"
         msg = (
+            f"Capture ID: {sol.capture_id}\n"
             f"Agency: {sol.agency}\n"
             f"Scope Match: {sol.scope_match_level} ({sol.scope_match_percentage:.0f}%)\n"
             f"Deadline: {sol.response_deadline or 'Not specified'}\n"
@@ -399,13 +422,9 @@ class CaptureService:
 
     def _is_duplicate(self, solicitation_url: str, db) -> bool:
         from app.models import Solicitation
-        cutoff = datetime.utcnow() - timedelta(days=30)
         existing = (
             db.query(Solicitation)
-            .filter(
-                Solicitation.solicitation_url == solicitation_url,
-                Solicitation.created_at >= cutoff,
-            )
+            .filter(Solicitation.solicitation_url == solicitation_url)
             .first()
         )
         return existing is not None
