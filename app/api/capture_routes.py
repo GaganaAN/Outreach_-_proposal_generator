@@ -17,6 +17,9 @@ Endpoints:
 import json
 import logging
 import secrets
+import threading
+import uuid
+from datetime import datetime as _dt, timedelta
 from typing import Optional
 
 from fastapi import (
@@ -24,6 +27,7 @@ from fastapi import (
 )
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
@@ -32,6 +36,39 @@ from app.models import Solicitation, Proposal
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+# ── Scan progress tracking ─────────────────────────────────────────────────────
+
+_scan_registry: dict = {}
+_scan_lock = threading.Lock()
+_latest_scan_id: Optional[str] = None
+
+
+def _create_scan() -> str:
+    global _latest_scan_id
+    scan_id = uuid.uuid4().hex[:8]
+    with _scan_lock:
+        _scan_registry[scan_id] = {
+            "status": "running",
+            "messages": ["Scan started — connecting to procurement sources..."],
+            "cancel": threading.Event(),
+        }
+        _latest_scan_id = scan_id
+    return scan_id
+
+
+def _add_msg(scan_id: str, msg: str):
+    with _scan_lock:
+        entry = _scan_registry.get(scan_id)
+        if entry:
+            entry["messages"].append(msg)
+
+
+def _finish_scan(scan_id: str, fin_status: str = "completed"):
+    with _scan_lock:
+        entry = _scan_registry.get(scan_id)
+        if entry:
+            entry["status"] = fin_status
 security = HTTPBasic()
 
 
@@ -67,6 +104,34 @@ class GenerateProposalRequest(BaseModel):
 
 # ── List & Stats ───────────────────────────────────────────────────────────────
 
+@router.get("/solicitations/scan-status")
+async def get_scan_status(_: str = Depends(verify_admin)):
+    """Return the status and progress messages of the most recent scan."""
+    if not _latest_scan_id:
+        return {"status": "idle", "messages": [], "scan_id": None}
+    with _scan_lock:
+        entry = _scan_registry.get(_latest_scan_id, {})
+        return {
+            "scan_id":  _latest_scan_id,
+            "status":   entry.get("status", "idle"),
+            "messages": list(entry.get("messages", [])),
+        }
+
+
+@router.post("/solicitations/scan-cancel")
+async def cancel_scan(_: str = Depends(verify_admin)):
+    """Request cancellation of the running scan."""
+    if not _latest_scan_id:
+        return {"message": "No active scan"}
+    with _scan_lock:
+        entry = _scan_registry.get(_latest_scan_id)
+        if entry and entry.get("status") == "running":
+            entry["cancel"].set()
+            entry["messages"].append("Stop requested — finishing current task...")
+            return {"message": "Cancel requested"}
+    return {"message": "No active scan to cancel"}
+
+
 @router.get("/solicitations/stats")
 async def solicitation_stats(
     db: Session = Depends(get_db),
@@ -101,6 +166,9 @@ async def list_solicitations(
     sol_status: Optional[str] = None,
     scope_level: Optional[str] = None,
     keyword: Optional[str] = None,
+    search: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
     db: Session = Depends(get_db),
     _: str = Depends(verify_admin),
 ):
@@ -115,6 +183,26 @@ async def list_solicitations(
         query = query.filter(Solicitation.scope_match_level == scope_level)
     if keyword:
         query = query.filter(Solicitation.keyword_matched.ilike(f"%{keyword}%"))
+    if search:
+        query = query.filter(
+            or_(
+                Solicitation.title.ilike(f"%{search}%"),
+                Solicitation.agency.ilike(f"%{search}%"),
+                Solicitation.solicitation_number.ilike(f"%{search}%"),
+            )
+        )
+    if date_from:
+        try:
+            query = query.filter(Solicitation.created_at >= _dt.strptime(date_from, "%Y-%m-%d"))
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            query = query.filter(
+                Solicitation.created_at < _dt.strptime(date_to, "%Y-%m-%d") + timedelta(days=1)
+            )
+        except ValueError:
+            pass
 
     total = query.count()
     sols = (
@@ -284,10 +372,11 @@ async def scan_now(
 ):
     """
     Manually trigger a HigherGov scan for all active procurement sources.
-    Runs in background — check the Solicitations list after a few minutes.
+    Runs in background — poll /scan-status for progress.
     """
-    background_tasks.add_task(_run_full_capture_scan)
-    return {"message": "Capture scan started — new solicitations will appear shortly"}
+    scan_id = _create_scan()
+    background_tasks.add_task(_run_full_capture_scan, scan_id)
+    return {"message": "Capture scan started", "scan_id": scan_id}
 
 
 @router.post("/solicitations/scan-url")
@@ -307,14 +396,25 @@ async def scan_single_url(
     return {"message": f"Single URL scan started for: {payload.url}"}
 
 
-def _run_full_capture_scan():
+def _run_full_capture_scan(scan_id: str = ""):
     """Background: scan all active procurement DiscoverySources."""
     from app.database import SessionLocal
     from app.models import DiscoverySource
     from app.services.lead_discovery import get_lead_discovery_agent
 
+    def msg(text: str):
+        if scan_id:
+            _add_msg(scan_id, text)
+
+    def is_cancelled() -> bool:
+        if not scan_id:
+            return False
+        with _scan_lock:
+            return _scan_registry.get(scan_id, {}).get("cancel", threading.Event()).is_set()
+
     db = SessionLocal()
     try:
+        msg("Looking up active procurement sources...")
         sources = (
             db.query(DiscoverySource)
             .filter(
@@ -324,19 +424,42 @@ def _run_full_capture_scan():
             .all()
         )
         if not sources:
+            msg("No active procurement sources found. Add one in Lead Discovery.")
             logger.info("[Capture] No active procurement sources configured")
+            _finish_scan(scan_id)
             return
+
+        msg(f"Found {len(sources)} source(s) — starting scan now...")
         agent = get_lead_discovery_agent()
-        for source in sources:
+        total_created = 0
+
+        for i, source in enumerate(sources, 1):
+            if is_cancelled():
+                msg("Scan stopped by user.")
+                _finish_scan(scan_id, "cancelled")
+                return
+
+            msg(f"Scanning {source.name} for matching solicitations...")
             try:
                 count = agent.scan_source(source, db)
-                from datetime import datetime
-                source.last_scanned_at = datetime.utcnow()
+                total_created += count
+                source.last_scanned_at = _dt.utcnow()
                 db.commit()
+                msg(f"✓ {source.name} — {count} new solicitation(s) added")
                 logger.info(f"[Capture] Scanned '{source.name}': {count} solicitation(s) created")
             except Exception as e:
+                msg(f"Could not complete scan for {source.name} — skipping")
                 logger.error(f"[Capture] Scan failed for {source.name}: {e}")
+
+        if total_created > 0:
+            msg(f"✓ Scan complete — {total_created} new solicitation(s) ready to review")
+        else:
+            msg("✓ Scan complete — no new solicitations found (already up to date)")
+        _finish_scan(scan_id)
+
     except Exception as e:
+        msg("Scan encountered an unexpected error.")
+        _finish_scan(scan_id, "error")
         logger.error(f"[Capture] Full scan failed: {e}")
     finally:
         db.close()

@@ -129,7 +129,7 @@ class CaptureService:
         full_text = self._build_full_text(markdown, pdf_contents)
 
         if len(full_text.strip()) < 100:
-            logger.debug(f"[Capture] Too little content at {solicitation_url}, skipping")
+            logger.warning(f"[Capture] Too little content ({len(full_text.strip())} chars) at {solicitation_url} — skipping")
             return None
 
         # Determine which keyword matched (from URL or content)

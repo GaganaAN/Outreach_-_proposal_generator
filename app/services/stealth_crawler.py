@@ -91,7 +91,16 @@ class StealthCrawler:
             from scrapling.fetchers import AsyncStealthySession
             logger.info("[StealthCrawler] Starting persistent stealth session")
             self.session = AsyncStealthySession(headless=self.headless)
-            await self.session.__aenter__()
+            try:
+                await self.session.__aenter__()
+            except Exception as e:
+                logger.error(f"[StealthCrawler] __aenter__ failed: {e}", exc_info=True)
+                self.session = None
+                raise
+            ctx = getattr(self.session, "context", None)
+            logger.info(f"[StealthCrawler] Session started — context={ctx!r} (None means browser failed to init)")
+            if ctx is None:
+                logger.error("[StealthCrawler] BrowserContext is None after __aenter__ — browser did not start")
             self._semaphore = asyncio.Semaphore(self.max_concurrent)
         return self.session
 
@@ -190,14 +199,52 @@ class StealthCrawler:
 
     @staticmethod
     def _to_markdown(page) -> str:
+        # Attempt 1: Scrapling's built-in markdown converter
         try:
             from scrapling.core.shell import Convertor
             gen = Convertor._extract_content(page, extraction_type="markdown",
                                              main_content_only=False)
-            return "".join(list(gen))
+            result = "".join(list(gen))
+            if result.strip():
+                return result
         except Exception as e:
-            logger.debug(f"[StealthCrawler] Markdown conversion failed: {e}")
-            return ""
+            logger.warning(f"[StealthCrawler] Markdown conversion failed (trying fallbacks): {e}")
+
+        # Attempt 2: Scrapling native text extraction (no extra dependencies)
+        try:
+            text = page.get_all_text(separator="\n")
+            if text and str(text).strip():
+                logger.info("[StealthCrawler] Used get_all_text() fallback for text extraction")
+                return str(text)
+        except Exception:
+            pass
+
+        # Attempt 3: strip HTML tags from raw HTML string
+        try:
+            import re
+            html = ""
+            for attr in ("html", "content", "body"):
+                raw = getattr(page, attr, None)
+                if raw and isinstance(raw, str) and len(raw) > 200:
+                    html = raw
+                    break
+                # Scrapling Adaptor — call .html_content or similar
+                if raw and hasattr(raw, "__str__"):
+                    s = str(raw)
+                    if len(s) > 200 and "<" in s:
+                        html = s
+                        break
+            if html:
+                text = re.sub(r'<[^>]+>', ' ', html)
+                text = re.sub(r'\s+', ' ', text).strip()
+                if len(text) > 100:
+                    logger.info("[StealthCrawler] Used HTML-strip fallback for text extraction")
+                    return text
+        except Exception as e:
+            logger.warning(f"[StealthCrawler] HTML-strip fallback failed: {e}")
+
+        logger.warning("[StealthCrawler] All text extraction methods failed — returning empty string")
+        return ""
 
     # ── Link extraction & filtering ────────────────────────────────────────────
 

@@ -457,6 +457,17 @@
             box-shadow: none;
         }
 
+        /* Force dark background on all native select dropdowns */
+        select option {
+            background-color: #1a1f2e;
+            color: #e2e8f0;
+        }
+
+        /* Date input calendar icon — white on dark */
+        input[type="date"] {
+            color-scheme: dark;
+        }
+
         .gen-spinner {
             width: 17px;
             height: 17px;
@@ -464,6 +475,27 @@
             border-top-color: var(--bg);
             border-radius: 50%;
             animation: spin .7s linear infinite;
+        }
+
+        .scan-spinner {
+            width: 52px;
+            height: 52px;
+            border: 4px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin .8s linear infinite;
+            margin: 0 auto;
+        }
+
+        .scan-done-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            margin: 0 auto;
         }
 
         /* Error */
@@ -2070,7 +2102,12 @@
                 </div>
 
                 <!-- Filters -->
-                <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;">
+                <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center;">
+                    <!-- Search -->
+                    <input id="capture-search" type="text" placeholder="🔍 Search title, agency…"
+                        oninput="loadCaptureSolicitations()"
+                        style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:7px 12px;color:var(--fg);min-width:180px;flex:1;max-width:260px;" />
+                    <!-- Status filter -->
                     <select id="capture-filter-status" onchange="loadCaptureSolicitations()"
                         style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:7px 12px;color:var(--fg);">
                         <option value="">All Statuses</option>
@@ -2080,6 +2117,7 @@
                         <option value="no_bid">No Bid</option>
                         <option value="proposal_generated">Proposal Generated</option>
                     </select>
+                    <!-- Scope filter -->
                     <select id="capture-filter-scope" onchange="loadCaptureSolicitations()"
                         style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:7px 12px;color:var(--fg);">
                         <option value="">All Match Levels</option>
@@ -2087,6 +2125,20 @@
                         <option value="Medium">Medium Match</option>
                         <option value="Low">Low Match</option>
                     </select>
+                    <!-- Date range -->
+                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                        <span style="font-size:12px;color:var(--sub);white-space:nowrap;">Captured:</span>
+                        <input id="capture-date-from" type="date" onchange="loadCaptureSolicitations()"
+                            title="From date"
+                            style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--fg);font-size:13px;color-scheme:dark;" />
+                        <span style="font-size:12px;color:var(--sub);">–</span>
+                        <input id="capture-date-to" type="date" onchange="loadCaptureSolicitations()"
+                            title="To date"
+                            style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--fg);font-size:13px;color-scheme:dark;" />
+                        <button onclick="setCaptureFilterToday()" class="btn btn-ghost" style="font-size:12px;padding:6px 11px;white-space:nowrap;">📅 Today</button>
+                        <button id="capture-date-clear" onclick="clearCaptureDateFilter()" class="btn btn-ghost"
+                            style="font-size:12px;padding:6px 11px;color:#ef4444;display:none;">✕ Clear</button>
+                    </div>
                     <button onclick="loadCaptureSolicitations()" class="btn btn-ghost">↺ Refresh</button>
                 </div>
 
@@ -2239,6 +2291,35 @@
                     <button onclick="submitCaptureUrl()" class="btn btn-lime">Scan URL</button>
                 </div>
                 <div id="capture-url-msg" style="margin-top:10px;font-size:13px;display:none;"></div>
+            </div>
+        </div>
+
+        <!-- ══ CAPTURE: Scan Progress Overlay ══════════════════════════ -->
+        <div id="scan-progress-overlay"
+            style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9000;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(3px);">
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:18px;padding:36px 32px;max-width:460px;width:90%;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,0.6);">
+                <!-- Indicator (spinner or done icon) -->
+                <div id="scan-indicator" style="margin-bottom:22px;"></div>
+                <!-- Title -->
+                <h3 id="scan-title" style="font-family:var(--serif);font-size:1.25rem;margin-bottom:6px;">Scanning for Solicitations</h3>
+                <!-- Subtitle / latest message -->
+                <p id="scan-subtitle" style="color:var(--sub);font-size:13px;margin-bottom:20px;min-height:18px;"></p>
+                <!-- Message feed -->
+                <div id="scan-messages"
+                    style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px 16px;max-height:200px;overflow-y:auto;text-align:left;margin-bottom:24px;font-size:12px;line-height:1.9;">
+                    <span style="color:var(--sub);">Waiting for updates…</span>
+                </div>
+                <!-- Action buttons -->
+                <div style="display:flex;gap:12px;justify-content:center;">
+                    <button id="scan-stop-btn" onclick="stopScan()"
+                        style="background:#1a0c0c;border:1px solid #ef4444;color:#ef4444;border-radius:8px;padding:9px 22px;font-size:14px;cursor:pointer;font-weight:600;">
+                        ⬛ Stop Scan
+                    </button>
+                    <button id="scan-close-btn" onclick="closeScanOverlay()"
+                        style="display:none;background:#052e16;border:1px solid #10b981;color:#10b981;border-radius:8px;padding:9px 22px;font-size:14px;cursor:pointer;font-weight:600;">
+                        ✓ Done
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -3850,9 +3931,20 @@
         async function loadCaptureSolicitations() {
             const statusFilter = document.getElementById('capture-filter-status').value;
             const scopeFilter  = document.getElementById('capture-filter-scope').value;
+            const searchVal    = (document.getElementById('capture-search')?.value || '').trim();
+            const dateFrom     = document.getElementById('capture-date-from')?.value || '';
+            const dateTo       = document.getElementById('capture-date-to')?.value || '';
+
             let path = '/solicitations/?limit=50';
-            if (statusFilter) path += '&sol_status=' + encodeURIComponent(statusFilter);
+            if (statusFilter) path += '&sol_status='  + encodeURIComponent(statusFilter);
             if (scopeFilter)  path += '&scope_level=' + encodeURIComponent(scopeFilter);
+            if (searchVal)    path += '&search='      + encodeURIComponent(searchVal);
+            if (dateFrom)     path += '&date_from='   + encodeURIComponent(dateFrom);
+            if (dateTo)       path += '&date_to='     + encodeURIComponent(dateTo);
+
+            // Show/hide the clear-date button
+            const clearBtn = document.getElementById('capture-date-clear');
+            if (clearBtn) clearBtn.style.display = (dateFrom || dateTo) ? 'inline-block' : 'none';
 
             const container = document.getElementById('capture-list');
             container.innerHTML = '<p style="color:var(--sub);">Loading…</p>';
@@ -3868,6 +3960,7 @@
                     const statusColors = { new:'#4f8eff', reviewing:'#f0a030', bid:'#10b981', no_bid:'#ef4444', proposal_generated:'#a855f7' };
                     const sc = statusColors[s.status] || '#9ca3af';
                     const pct = s.scope_match_percentage ? `${s.scope_match_percentage.toFixed(0)}%` : '';
+                    const capturedOn = s.created_at ? new Date(s.created_at).toLocaleDateString() : '';
                     return `
                     <div class="card" style="margin-bottom:12px;border-left:3px solid ${st.border};cursor:pointer;"
                         onclick="openCaptureDetail(${s.id})">
@@ -3879,6 +3972,7 @@
                                 <div style="font-size:12px;color:var(--sub);">
                                     ${s.agency || ''} &nbsp;·&nbsp; Keyword: <em>${s.keyword_matched || ''}</em>
                                     ${s.response_deadline ? ` &nbsp;·&nbsp; Deadline: <strong>${s.response_deadline}</strong>` : ''}
+                                    ${capturedOn ? ` &nbsp;·&nbsp; Captured: ${capturedOn}` : ''}
                                 </div>
                             </div>
                             <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
@@ -3895,6 +3989,20 @@
             } catch (e) {
                 container.innerHTML = `<p style="color:#ef4444;">Error: ${e.message}</p>`;
             }
+        }
+
+        /* ── Date filter helpers ─────────────────────────────────────── */
+        function setCaptureFilterToday() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('capture-date-from').value = today;
+            document.getElementById('capture-date-to').value   = today;
+            loadCaptureSolicitations();
+        }
+
+        function clearCaptureDateFilter() {
+            document.getElementById('capture-date-from').value = '';
+            document.getElementById('capture-date-to').value   = '';
+            loadCaptureSolicitations();
         }
 
         /* ── Helper: render a JSON section value ─────────────────────── */
@@ -4145,20 +4253,106 @@
             }
         }
 
+        /* ── Scan progress overlay ───────────────────────────────────── */
+        let _scanPollTimer = null;
+
+        function _openScanOverlay() {
+            const el = document.getElementById('scan-progress-overlay');
+            el.style.display = 'flex';
+            document.getElementById('scan-indicator').innerHTML = '<div class="scan-spinner"></div>';
+            document.getElementById('scan-title').textContent    = 'Scanning for Solicitations';
+            document.getElementById('scan-subtitle').textContent = 'Connecting to procurement sources…';
+            document.getElementById('scan-messages').innerHTML   = '<span style="color:var(--sub);">Waiting for updates…</span>';
+            const stopBtn  = document.getElementById('scan-stop-btn');
+            const closeBtn = document.getElementById('scan-close-btn');
+            stopBtn.style.display   = 'inline-block';
+            stopBtn.disabled        = false;
+            stopBtn.textContent     = '⬛ Stop Scan';
+            closeBtn.style.display  = 'none';
+        }
+
+        function _finishScanOverlay(scanStatus) {
+            clearInterval(_scanPollTimer);
+            _scanPollTimer = null;
+
+            const isDone      = scanStatus === 'completed';
+            const isCancelled = scanStatus === 'cancelled';
+
+            const iconHtml = isDone
+                ? '<div class="scan-done-icon" style="background:#052e16;border:2px solid #10b981;">✓</div>'
+                : isCancelled
+                    ? '<div class="scan-done-icon" style="background:#1c1400;border:2px solid #f0a030;">⬛</div>'
+                    : '<div class="scan-done-icon" style="background:#1a0c0c;border:2px solid #ef4444;">✕</div>';
+
+            document.getElementById('scan-indicator').innerHTML  = iconHtml;
+            document.getElementById('scan-title').textContent    = isDone ? 'Scan Complete' : isCancelled ? 'Scan Stopped' : 'Scan Ended';
+            document.getElementById('scan-subtitle').textContent = isDone ? 'New solicitations are ready to review.' : isCancelled ? 'The scan was stopped early.' : 'An error occurred during the scan.';
+            document.getElementById('scan-stop-btn').style.display  = 'none';
+            document.getElementById('scan-close-btn').style.display = 'inline-block';
+
+            loadCaptureStats();
+            loadCaptureSolicitations();
+        }
+
+        async function _pollScanStatus() {
+            try {
+                const res  = await adminFetch('GET', '/solicitations/scan-status');
+                const msgs = res.messages || [];
+
+                const feed = document.getElementById('scan-messages');
+                if (msgs.length) {
+                    feed.innerHTML = msgs.map(m => {
+                        const color = m.startsWith('✓') ? '#10b981'
+                            : (m.toLowerCase().includes('error') || m.toLowerCase().includes('failed')) ? '#ef4444'
+                            : m.toLowerCase().includes('stop') ? '#f0a030'
+                            : 'var(--fg)';
+                        return `<div style="color:${color};padding:2px 0;">${m}</div>`;
+                    }).join('');
+                    feed.scrollTop = feed.scrollHeight;
+                    document.getElementById('scan-subtitle').textContent =
+                        msgs[msgs.length - 1].replace(/^✓ /, '');
+                }
+
+                if (res.status !== 'running') {
+                    _finishScanOverlay(res.status);
+                }
+            } catch (e) {
+                console.warn('[Scan] Poll error:', e);
+            }
+        }
+
         /* ── Trigger full capture scan ───────────────────────────────── */
         async function captureScanNow() {
-            const btn = document.getElementById('capture-scan-btn');
-            btn.disabled = true;
-            btn.textContent = '⏳ Scanning…';
+            _openScanOverlay();
             try {
                 await adminFetch('POST', '/solicitations/scan-now');
-                toast('Capture scan started — new solicitations will appear shortly', 'success');
-                setTimeout(() => { loadCaptureStats(); loadCaptureSolicitations(); }, 3000);
+                if (_scanPollTimer) clearInterval(_scanPollTimer);
+                _scanPollTimer = setInterval(_pollScanStatus, 3000);
             } catch (e) {
-                toast('Scan error: ' + e.message, 'error');
-            } finally {
-                setTimeout(() => { btn.disabled = false; btn.textContent = '⚡ Scan Now'; }, 5000);
+                document.getElementById('scan-title').textContent    = 'Scan Failed to Start';
+                document.getElementById('scan-subtitle').textContent = e.message;
+                document.getElementById('scan-stop-btn').style.display  = 'none';
+                document.getElementById('scan-close-btn').style.display = 'inline-block';
             }
+        }
+
+        async function stopScan() {
+            const btn = document.getElementById('scan-stop-btn');
+            btn.disabled    = true;
+            btn.textContent = '⏳ Stopping…';
+            try {
+                await adminFetch('POST', '/solicitations/scan-cancel');
+                document.getElementById('scan-subtitle').textContent = 'Stop requested — finishing current task…';
+            } catch (e) {
+                console.warn('[Scan] Stop error:', e);
+            }
+        }
+
+        function closeScanOverlay() {
+            document.getElementById('scan-progress-overlay').style.display = 'none';
+            if (_scanPollTimer) { clearInterval(_scanPollTimer); _scanPollTimer = null; }
+            loadCaptureStats();
+            loadCaptureSolicitations();
         }
 
         /* ── Single URL scan modal ───────────────────────────────────── */
