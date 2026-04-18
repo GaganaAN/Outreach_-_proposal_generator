@@ -29,13 +29,15 @@ class CaptureService:
 
     # ── Public: scan a procurement DiscoverySource ─────────────────────────────
 
-    def scan_source(self, source, db) -> int:
+    def scan_source(self, source, db, on_save=None, is_cancelled=None) -> int:
         """
         Scan a DiscoverySource of type 'procurement' using StealthCrawler.
 
         Args:
-            source: DiscoverySource ORM instance
-            db:     Active SQLAlchemy session
+            source:       DiscoverySource ORM instance
+            db:           Active SQLAlchemy session
+            on_save:      Optional callable(sol) called after each solicitation is saved
+            is_cancelled: Optional callable() → bool; checked between each sub-result
 
         Returns:
             Number of new Solicitation records created
@@ -68,10 +70,19 @@ class CaptureService:
 
         created = 0
         for sub in result.get("sub_results", []):
+            # Check cancellation before each LLM call (which takes ~10-15 s each)
+            if is_cancelled and is_cancelled():
+                logger.info("[Capture] Scan cancelled — stopping between solicitations")
+                break
             try:
                 sol = self._process_sub_result(sub, source.url, keywords, db)
                 if sol:
                     created += 1
+                    if on_save:
+                        try:
+                            on_save(sol)
+                        except Exception:
+                            pass
             except Exception as e:
                 logger.error(f"[Capture] Failed to process sub-result {sub.get('url')}: {e}")
                 db.rollback()

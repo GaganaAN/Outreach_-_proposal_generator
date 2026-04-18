@@ -1,0 +1,635 @@
+2026-04-18 13:59:48,111 - app.main - ERROR - Unhandled exception: (sqlite3.OperationalError) no such column: solicitations.capture_id
+[SQL: SELECT count(*) AS count_1
+FROM (SELECT solicitations.id AS solicitations_id, solicitations.capture_id AS solicitations_capture_id, solicitations.source_url AS solicitations_source_url, solicitations.solicitation_url AS solicitations_solicitation_url, solicitations.title AS solicitations_title, solicitations.agency AS solicitations_agency, solicitations.solicitation_number AS solicitations_solicitation_number, solicitations.response_deadline AS solicitations_response_deadline, solicitations.keyword_matched AS solicitations_keyword_matched, solicitations.keyword_matched_paragraph AS solicitations_keyword_matched_paragraph, solicitations.past_performance_section AS solicitations_past_performance_section, solicitations.insurance_section AS solicitations_insurance_section, solicitations.certifications_section AS solicitations_certifications_section, solicitations.licenses_section AS solicitations_licenses_section, solicitations.mandatory_requirements AS solicitations_mandatory_requirements, solicitations.scope_match_level AS solicitations_scope_match_level, solicitations.scope_match_percentage AS solicitations_scope_match_percentage, solicitations.scope_match_summary AS solicitations_scope_match_summary, solicitations.technical_requirements AS solicitations_technical_requirements, solicitations.what_may_help_win AS solicitations_what_may_help_win, solicitations.evaluation_matrix AS solicitations_evaluation_matrix, solicitations.agency_registration_section AS solicitations_agency_registration_section, solicitations.raw_rfp_text AS solicitations_raw_rfp_text, solicitations.pdf_filenames AS solicitations_pdf_filenames, solicitations.attachment_urls AS solicitations_attachment_urls, solicitations.status AS solicitations_status, solicitations.bid_decision_notes AS solicitations_bid_decision_notes, solicitations.proposal_id AS solicitations_proposal_id, solicitations.created_at AS solicitations_created_at, solicitations.updated_at AS solicitations_updated_at
+FROM solicitations) AS anon_1]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Traceback (most recent call last):
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such column: solicitations.capture_id
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\routing.py", line 680, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\fastapi\routing.py", line 134, in app  
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\fastapi\routing.py", line 120, in app  
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\fastapi\routing.py", line 674, in app  
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\fastapi\routing.py", line 328, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\app\api\capture_routes.py", line 141, in solicitation_stats   
+    total       = db.query(Solicitation).count()
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\orm\query.py", line 3153, in count
+    self._legacy_from_self(col).enable_eagerloads(False).scalar()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\orm\query.py", line 2842, in scalar
+    ret = self.one()
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\orm\query.py", line 2815, in one
+    return self._iter().one()  # type: ignore
+           ~~~~~~~~~~^^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\orm\query.py", line 2864, in _iter
+    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+                                                  ~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+        params,
+        ^^^^^^^
+        execution_options={"_sa_orm_load_options": self.load_options},
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2351, in execute
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        _add_event=_add_event,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2249, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self,
+        ^^^^^
+    ...<4 lines>...
+        conn,
+        ^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\orm\context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+        statement, params or {}, execution_options=execution_options
+    )
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1419, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 527, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2363, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such column: solicitations.capture_id
+[SQL: SELECT count(*) AS count_1
+FROM (SELECT solicitations.id AS solicitations_id, solicitations.capture_id AS solicitations_capture_id, solicitations.source_url AS solicitations_source_url, solicitations.solicitation_url AS solicitations_solicitation_url, solicitations.title AS solicitations_title, solicitations.agency AS solicitations_agency, solicitations.solicitation_number AS solicitations_solicitation_number, solicitations.response_deadline AS solicitations_response_deadline, solicitations.keyword_matched AS solicitations_keyword_matched, solicitations.keyword_matched_paragraph AS solicitations_keyword_matched_paragraph, solicitations.past_performance_section AS solicitations_past_performance_section, solicitations.insurance_section AS solicitations_insurance_section, solicitations.certifications_section AS solicitations_certifications_section, solicitations.licenses_section AS solicitations_licenses_section, solicitations.mandatory_requirements AS solicitations_mandatory_requirements, solicitations.scope_match_level AS solicitations_scope_match_level, solicitations.scope_match_percentage AS solicitations_scope_match_percentage, solicitations.scope_match_summary AS solicitations_scope_match_summary, solicitations.technical_requirements AS solicitations_technical_requirements, solicitations.what_may_help_win AS solicitations_what_may_help_win, solicitations.evaluation_matrix AS solicitations_evaluation_matrix, solicitations.agency_registration_section AS solicitations_agency_registration_section, solicitations.raw_rfp_text AS solicitations_raw_rfp_text, solicitations.pdf_filenames AS solicitations_pdf_filenames, solicitations.attachment_urls AS solicitations_attachment_urls, solicitations.status AS solicitations_status, solicitations.bid_decision_notes AS solicitations_bid_decision_notes, solicitations.proposal_id AS solicitations_proposal_id, solicitations.created_at AS solicitations_created_at, solicitations.updated_at AS solicitations_updated_at
+FROM solicitations) AS anon_1]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+INFO:     127.0.0.1:64782 - "GET /api/admin/solicitations/stats HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such column: solicitations.capture_id
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 420, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\fastapi\applications.py", line 1163, in __call__
+    await super().__call__(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\applications.py", line 90, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\routing.py", line 680, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\fastapi\routing.py", line 134, in app  
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\fastapi\routing.py", line 120, in app  
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\fastapi\routing.py", line 674, in app  
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\fastapi\routing.py", line 328, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\app\api\capture_routes.py", line 141, in solicitation_stats   
+    total       = db.query(Solicitation).count()
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\orm\query.py", line 3153, in count
+    self._legacy_from_self(col).enable_eagerloads(False).scalar()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\orm\query.py", line 2842, in scalar
+    ret = self.one()
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\orm\query.py", line 2815, in one
+    return self._iter().one()  # type: ignore
+           ~~~~~~~~~~^^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\orm\query.py", line 2864, in _iter
+    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+                                                  ~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+        params,
+        ^^^^^^^
+        execution_options={"_sa_orm_load_options": self.load_options},
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2351, in execute
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        _add_event=_add_event,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2249, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self,
+        ^^^^^
+    ...<4 lines>...
+        conn,
+        ^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\orm\context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+        statement, params or {}, execution_options=execution_options
+    )
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1419, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 527, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2363, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such column: solicitations.capture_id
+[SQL: SELECT count(*) AS count_1
+FROM (SELECT solicitations.id AS solicitations_id, solicitations.capture_id AS solicitations_capture_id, solicitations.source_url AS solicitations_source_url, solicitations.solicitation_url AS solicitations_solicitation_url, solicitations.title AS solicitations_title, solicitations.agency AS solicitations_agency, solicitations.solicitation_number AS solicitations_solicitation_number, solicitations.response_deadline AS solicitations_response_deadline, solicitations.keyword_matched AS solicitations_keyword_matched, solicitations.keyword_matched_paragraph AS solicitations_keyword_matched_paragraph, solicitations.past_performance_section AS solicitations_past_performance_section, solicitations.insurance_section AS solicitations_insurance_section, solicitations.certifications_section AS solicitations_certifications_section, solicitations.licenses_section AS solicitations_licenses_section, solicitations.mandatory_requirements AS solicitations_mandatory_requirements, solicitations.scope_match_level AS solicitations_scope_match_level, solicitations.scope_match_percentage AS solicitations_scope_match_percentage, solicitations.scope_match_summary AS solicitations_scope_match_summary, solicitations.technical_requirements AS solicitations_technical_requirements, solicitations.what_may_help_win AS solicitations_what_may_help_win, solicitations.evaluation_matrix AS solicitations_evaluation_matrix, solicitations.agency_registration_section AS solicitations_agency_registration_section, solicitations.raw_rfp_text AS solicitations_raw_rfp_text, solicitations.pdf_filenames AS solicitations_pdf_filenames, solicitations.attachment_urls AS solicitations_attachment_urls, solicitations.status AS solicitations_status, solicitations.bid_decision_notes AS solicitations_bid_decision_notes, solicitations.proposal_id AS solicitations_proposal_id, solicitations.created_at AS solicitations_created_at, solicitations.updated_at AS solicitations_updated_at
+FROM solicitations) AS anon_1]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-04-18 13:59:48,518 - app.main - ERROR - Unhandled exception: (sqlite3.OperationalError) no such column: solicitations.capture_id
+[SQL: SELECT count(*) AS count_1
+FROM (SELECT solicitations.id AS solicitations_id, solicitations.capture_id AS solicitations_capture_id, solicitations.source_url AS solicitations_source_url, solicitations.solicitation_url AS solicitations_solicitation_url, solicitations.title AS solicitations_title, solicitations.agency AS solicitations_agency, solicitations.solicitation_number AS solicitations_solicitation_number, solicitations.response_deadline AS solicitations_response_deadline, solicitations.keyword_matched AS solicitations_keyword_matched, solicitations.keyword_matched_paragraph AS solicitations_keyword_matched_paragraph, solicitations.past_performance_section AS solicitations_past_performance_section, solicitations.insurance_section AS solicitations_insurance_section, solicitations.certifications_section AS solicitations_certifications_section, solicitations.licenses_section AS solicitations_licenses_section, solicitations.mandatory_requirements AS solicitations_mandatory_requirements, solicitations.scope_match_level AS solicitations_scope_match_level, solicitations.scope_match_percentage AS solicitations_scope_match_percentage, solicitations.scope_match_summary AS solicitations_scope_match_summary, solicitations.technical_requirements AS solicitations_technical_requirements, solicitations.what_may_help_win AS solicitations_what_may_help_win, solicitations.evaluation_matrix AS solicitations_evaluation_matrix, solicitations.agency_registration_section AS solicitations_agency_registration_section, solicitations.raw_rfp_text AS solicitations_raw_rfp_text, solicitations.pdf_filenames AS solicitations_pdf_filenames, solicitations.attachment_urls AS solicitations_attachment_urls, solicitations.status AS solicitations_status, solicitations.bid_decision_notes AS solicitations_bid_decision_notes, solicitations.proposal_id AS solicitations_proposal_id, solicitations.created_at AS solicitations_created_at, solicitations.updated_at AS solicitations_updated_at
+FROM solicitations) AS anon_1]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Traceback (most recent call last):
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such column: solicitations.capture_id
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\routing.py", line 680, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\fastapi\routing.py", line 134, in app  
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\fastapi\routing.py", line 120, in app  
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\fastapi\routing.py", line 674, in app  
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\fastapi\routing.py", line 328, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\app\api\capture_routes.py", line 207, in list_solicitations   
+    total = query.count()
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\orm\query.py", line 3153, in count
+    self._legacy_from_self(col).enable_eagerloads(False).scalar()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\orm\query.py", line 2842, in scalar
+    ret = self.one()
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\orm\query.py", line 2815, in one
+    return self._iter().one()  # type: ignore
+           ~~~~~~~~~~^^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\orm\query.py", line 2864, in _iter
+    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+                                                  ~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+        params,
+        ^^^^^^^
+        execution_options={"_sa_orm_load_options": self.load_options},
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2351, in execute
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        _add_event=_add_event,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2249, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self,
+        ^^^^^
+    ...<4 lines>...
+        conn,
+        ^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\orm\context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+        statement, params or {}, execution_options=execution_options
+    )
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1419, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 527, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2363, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such column: solicitations.capture_id
+[SQL: SELECT count(*) AS count_1
+FROM (SELECT solicitations.id AS solicitations_id, solicitations.capture_id AS solicitations_capture_id, solicitations.source_url AS solicitations_source_url, solicitations.solicitation_url AS solicitations_solicitation_url, solicitations.title AS solicitations_title, solicitations.agency AS solicitations_agency, solicitations.solicitation_number AS solicitations_solicitation_number, solicitations.response_deadline AS solicitations_response_deadline, solicitations.keyword_matched AS solicitations_keyword_matched, solicitations.keyword_matched_paragraph AS solicitations_keyword_matched_paragraph, solicitations.past_performance_section AS solicitations_past_performance_section, solicitations.insurance_section AS solicitations_insurance_section, solicitations.certifications_section AS solicitations_certifications_section, solicitations.licenses_section AS solicitations_licenses_section, solicitations.mandatory_requirements AS solicitations_mandatory_requirements, solicitations.scope_match_level AS solicitations_scope_match_level, solicitations.scope_match_percentage AS solicitations_scope_match_percentage, solicitations.scope_match_summary AS solicitations_scope_match_summary, solicitations.technical_requirements AS solicitations_technical_requirements, solicitations.what_may_help_win AS solicitations_what_may_help_win, solicitations.evaluation_matrix AS solicitations_evaluation_matrix, solicitations.agency_registration_section AS solicitations_agency_registration_section, solicitations.raw_rfp_text AS solicitations_raw_rfp_text, solicitations.pdf_filenames AS solicitations_pdf_filenames, solicitations.attachment_urls AS solicitations_attachment_urls, solicitations.status AS solicitations_status, solicitations.bid_decision_notes AS solicitations_bid_decision_notes, solicitations.proposal_id AS solicitations_proposal_id, solicitations.created_at AS solicitations_created_at, solicitations.updated_at AS solicitations_updated_at
+FROM solicitations) AS anon_1]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+INFO:     127.0.0.1:51109 - "GET /api/admin/solicitations/?limit=50 HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such column: solicitations.capture_id
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 420, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\fastapi\applications.py", line 1163, in __call__
+    await super().__call__(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\applications.py", line 90, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\routing.py", line 680, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\fastapi\routing.py", line 134, in app  
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\fastapi\routing.py", line 120, in app  
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\fastapi\routing.py", line 674, in app  
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\fastapi\routing.py", line 328, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\app\api\capture_routes.py", line 207, in list_solicitations   
+    total = query.count()
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\orm\query.py", line 3153, in count
+    self._legacy_from_self(col).enable_eagerloads(False).scalar()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\orm\query.py", line 2842, in scalar
+    ret = self.one()
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\orm\query.py", line 2815, in one
+    return self._iter().one()  # type: ignore
+           ~~~~~~~~~~^^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\orm\query.py", line 2864, in _iter
+    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+                                                  ~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+        params,
+        ^^^^^^^
+        execution_options={"_sa_orm_load_options": self.load_options},
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2351, in execute
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        _add_event=_add_event,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2249, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self,
+        ^^^^^
+    ...<4 lines>...
+        conn,
+        ^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\orm\context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+        statement, params or {}, execution_options=execution_options
+    )
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1419, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 527, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2363, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\VijayalakshmiKV\Desktop\Vij-KV\Innovative Project\Outreach_-_proposal_generator\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such column: solicitations.capture_id
+[SQL: SELECT count(*) AS count_1
+FROM (SELECT solicitations.id AS solicitations_id, solicitations.capture_id AS solicitations_capture_id, solicitations.source_url AS solicitations_source_url, solicitations.solicitation_url AS solicitations_solicitation_url, solicitations.title AS solicitations_title, solicitations.agency AS solicitations_agency, solicitations.solicitation_number AS solicitations_solicitation_number, solicitations.response_deadline AS solicitations_response_deadline, solicitations.keyword_matched AS solicitations_keyword_matched, solicitations.keyword_matched_paragraph AS solicitations_keyword_matched_paragraph, solicitations.past_performance_section AS solicitations_past_performance_section, solicitations.insurance_section AS solicitations_insurance_section, solicitations.certifications_section AS solicitations_certifications_section, solicitations.licenses_section AS solicitations_licenses_section, solicitations.mandatory_requirements AS solicitations_mandatory_requirements, solicitations.scope_match_level AS solicitations_scope_match_level, solicitations.scope_match_percentage AS solicitations_scope_match_percentage, solicitations.scope_match_summary AS solicitations_scope_match_summary, solicitations.technical_requirements AS solicitations_technical_requirements, solicitations.what_may_help_win AS solicitations_what_may_help_win, solicitations.evaluation_matrix AS solicitations_evaluation_matrix, solicitations.agency_registration_section AS solicitations_agency_registration_section, solicitations.raw_rfp_text AS solicitations_raw_rfp_text, solicitations.pdf_filenames AS solicitations_pdf_filenames, solicitations.attachment_urls AS solicitations_attachment_urls, solicitations.status AS solicitations_status, solicitations.bid_decision_notes AS solicitations_bid_decision_notes, solicitations.proposal_id AS solicitations_proposal_id, solicitations.created_at AS solicitations_created_at, solicitations.updated_at AS solicitations_updated_at
+FROM solicitations) AS anon_1]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+INFO:     127.0.0.1:65260 - "GET /api/notifications/?unread_only=true&limit=50 HTTP/1.1" 200 OK

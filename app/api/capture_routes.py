@@ -441,7 +441,10 @@ def _run_full_capture_scan(scan_id: str = ""):
 
             msg(f"Scanning {source.name} for matching solicitations...")
             try:
-                count = agent.scan_source(source, db)
+                def _on_save(sol, _src=source.name):
+                    msg(f"✓ Saved [{sol.capture_id}] {sol.title[:60]} ({sol.scope_match_level} {sol.scope_match_percentage:.0f}%)")
+
+                count = agent.scan_source(source, db, on_save=_on_save, is_cancelled=is_cancelled)
                 total_created += count
                 source.last_scanned_at = _dt.utcnow()
                 db.commit()
@@ -450,6 +453,12 @@ def _run_full_capture_scan(scan_id: str = ""):
             except Exception as e:
                 msg(f"Could not complete scan for {source.name} — skipping")
                 logger.error(f"[Capture] Scan failed for {source.name}: {e}")
+
+            # Exit the source loop immediately if cancelled mid-scan
+            if is_cancelled():
+                msg("Scan stopped by user.")
+                _finish_scan(scan_id, "cancelled")
+                return
 
         if total_created > 0:
             msg(f"✓ Scan complete — {total_created} new solicitation(s) ready to review")
