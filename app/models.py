@@ -1,15 +1,21 @@
 """
 Database models for Portfolio Management, Email Tracking, Signal Classification,
-Opportunity Management, Proposal Generation, Lead Discovery, and Capture Management
+Opportunity Management, Proposal Generation, Lead Discovery, and Capture Management.
+
+All tables live in the 'mailposalix' schema on the company PostgreSQL (genai-dev).
+For local SQLite dev the schema is ignored automatically by SQLAlchemy.
 """
 from sqlalchemy import Column, Integer, String, Text, DateTime, Float, Boolean, ForeignKey
 from sqlalchemy.sql import func
 from app.database import Base
 
+_SCHEMA = "mailposalix"
+
 
 class Portfolio(Base):
     """Portfolio entry - stores skill + projects + link"""
     __tablename__ = "portfolios"
+    __table_args__ = {"schema": _SCHEMA}
 
     id          = Column(Integer, primary_key=True, index=True)
     skill       = Column(String(100), nullable=False, index=True)
@@ -36,6 +42,7 @@ class Portfolio(Base):
 class Email(Base):
     """Email tracking - stores all generated emails with status"""
     __tablename__ = "emails"
+    __table_args__ = {"schema": _SCHEMA}
 
     id               = Column(Integer, primary_key=True, index=True)
     job_url          = Column(String(1000), nullable=False)
@@ -79,6 +86,7 @@ class Email(Base):
 class Signal(Base):
     """Classified internet signal — job posting, RFP notice, or service request"""
     __tablename__ = "signals"
+    __table_args__ = {"schema": _SCHEMA}
 
     id               = Column(Integer, primary_key=True, index=True)
     source_url       = Column(String(1000), nullable=True)
@@ -109,9 +117,10 @@ class Signal(Base):
 class Opportunity(Base):
     """Scored sales opportunity derived from a signal"""
     __tablename__ = "opportunities"
+    __table_args__ = {"schema": _SCHEMA}
 
     id                = Column(Integer, primary_key=True, index=True)
-    signal_id         = Column(Integer, ForeignKey("signals.id"), nullable=True)
+    signal_id         = Column(Integer, ForeignKey("mailposalix.signals.id"), nullable=True)
     company_name      = Column(String(200), nullable=True, index=True)
     source_url        = Column(String(1000), nullable=True)
     opportunity_type  = Column(String(50), nullable=False)  # email_outreach | proposal
@@ -147,9 +156,10 @@ class Opportunity(Base):
 class Notification(Base):
     """In-app notification for marketing team"""
     __tablename__ = "notifications"
+    __table_args__ = {"schema": _SCHEMA}
 
     id              = Column(Integer, primary_key=True, index=True)
-    opportunity_id  = Column(Integer, ForeignKey("opportunities.id"), nullable=True)
+    opportunity_id  = Column(Integer, ForeignKey("mailposalix.opportunities.id"), nullable=True)
     title           = Column(String(300), nullable=False)
     message         = Column(Text, nullable=False)
     is_read         = Column(Boolean, default=False, index=True)
@@ -173,9 +183,10 @@ class Notification(Base):
 class Proposal(Base):
     """AI-generated proposal from an uploaded RFP document"""
     __tablename__ = "proposals"
+    __table_args__ = {"schema": _SCHEMA}
 
     id               = Column(Integer, primary_key=True, index=True)
-    opportunity_id   = Column(Integer, ForeignKey("opportunities.id"), nullable=True)
+    opportunity_id   = Column(Integer, ForeignKey("mailposalix.opportunities.id"), nullable=True)
     rfp_filename     = Column(String(500), nullable=True)
     rfp_text         = Column(Text, nullable=True)
     requirements     = Column(Text, nullable=True)   # JSON list
@@ -203,6 +214,7 @@ class Proposal(Base):
 class DiscoverySource(Base):
     """Configured source URL for the automated lead discovery agent"""
     __tablename__ = "discovery_sources"
+    __table_args__ = {"schema": _SCHEMA}
 
     id                   = Column(Integer, primary_key=True, index=True)
     name                 = Column(String(200), nullable=False)
@@ -234,6 +246,7 @@ class DiscoverySource(Base):
 class PastProject(Base):
     """Past project / performance record used for proposal generation"""
     __tablename__ = "past_projects"
+    __table_args__ = {"schema": _SCHEMA}
 
     id                = Column(Integer, primary_key=True, index=True)
     title             = Column(String(300), nullable=False)
@@ -279,6 +292,7 @@ class Solicitation(Base):
     Lifecycle: new → reviewing → bid | no_bid → proposal_generated
     """
     __tablename__ = "solicitations"
+    __table_args__ = {"schema": _SCHEMA}
 
     id                        = Column(Integer, primary_key=True, index=True)
     capture_id                = Column(String(20), nullable=True, unique=True, index=True)  # e.g. CAP-2026-0001
@@ -338,7 +352,7 @@ class Solicitation(Base):
     bid_decision_notes        = Column(Text, nullable=True)
 
     # ── Link to generated proposal (set after bid + generation) ───────────────
-    proposal_id               = Column(Integer, ForeignKey("proposals.id"), nullable=True)
+    proposal_id               = Column(Integer, ForeignKey("mailposalix.proposals.id"), nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
@@ -442,6 +456,7 @@ class Solicitation(Base):
 class KeywordSet(Base):
     """Named keyword set for capture/discovery scanning. Only one set is active at a time."""
     __tablename__ = "keyword_sets"
+    __table_args__ = {"schema": _SCHEMA}
 
     id         = Column(Integer, primary_key=True, index=True)
     name       = Column(String(100), nullable=False, unique=True)
