@@ -474,6 +474,82 @@ class StealthCrawler:
             logger.warning(f"[StealthCrawler] ✗ HigherGov search interaction failed: {e} — proceeding without filter")
             return original_url
 
+    async def _apply_active_filter(self, pw_page) -> bool:
+        """
+        Best-effort: activate HigherGov's 'Active' bid status filter so only
+        open solicitations (deadline not yet passed) appear in results.
+
+        Uses JavaScript to interact with the Vue.js filter state directly,
+        which is more reliable than clicking hidden DOM elements.
+        Returns True if applied, False if not (safe — caller continues either way).
+        The existing _is_deadline_future() gate in CaptureService is the hard safety net.
+        """
+        try:
+            # Ask the page what filter-related Vue data it has
+            filter_info = await pw_page.evaluate("""() => {
+                // Look for Vue instances that hold filter state
+                const inputs = [...document.querySelectorAll('input, select')].map(el => ({
+                    id: el.id, name: el.name, type: el.type,
+                    placeholder: el.placeholder, value: el.value
+                }));
+                // Look for any visible filter buttons or chips mentioning 'Active'
+                const activeEls = [...document.querySelectorAll('*')]
+                    .filter(el => el.children.length === 0
+                        && el.innerText
+                        && el.innerText.trim() === 'Active'
+                        && el.offsetParent !== null)
+                    .map(el => ({ tag: el.tagName, class: el.className, id: el.id }));
+                return { activeEls };
+            }""")
+            logger.info(f"[StealthCrawler] Active filter search — visible 'Active' elements: {filter_info.get('activeEls', [])}")
+
+            # Strategy 1: click a visible element with text "Active" in a filter context
+            active_locators = [
+                pw_page.get_by_role("option", name="Active"),
+                pw_page.get_by_role("checkbox", name=re.compile("active", re.I)),
+                pw_page.locator('.badge:has-text("Active")'),
+                pw_page.locator('[class*="filter"]:has-text("Active")'),
+                pw_page.locator('label:has-text("Active")'),
+            ]
+            for loc in active_locators:
+                try:
+                    if await loc.count() > 0 and await loc.first.is_visible():
+                        await loc.first.click()
+                        await pw_page.wait_for_load_state("networkidle")
+                        logger.info("[StealthCrawler] ✓ Active bid status filter applied via element click")
+                        return True
+                except Exception:
+                    continue
+
+            # Strategy 2: set the response-deadline date filter via JavaScript
+            # HigherGov uses 'date2.relative_after' for "deadline N+ days from now"
+            # Setting it to 0 means "deadline today or later" = active solicitations
+            result = await pw_page.evaluate("""() => {
+                const el = document.getElementById('date2.relative_after');
+                if (el) {
+                    el.value = '0';
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                    return true;
+                }
+                return false;
+            }""")
+            if result:
+                await pw_page.wait_for_timeout(1500)
+                await pw_page.wait_for_load_state("networkidle")
+                logger.info("[StealthCrawler] ✓ Response deadline filter set to today+ via JavaScript")
+                return True
+
+            logger.info(
+                "[StealthCrawler] Active filter not applied — no matching filter element found. "
+                "Expired solicitations will be caught by the deadline gate in CaptureService."
+            )
+            return False
+
+        except Exception as e:
+            logger.debug(f"[StealthCrawler] Active filter attempt failed: {e} — continuing without it")
+            return False
+
     async def _collect_all_links_paginated(self, listing_url: str, search_keyword: str = "") -> List[str]:
         """
         Handles HigherGov's JavaScript-controlled pagination.
@@ -513,7 +589,9 @@ class StealthCrawler:
             if search_keyword and "highergov.com" in listing_url:
                 await self._dismiss_modal_static(pw_page)
                 listing_url = await self._highergov_search(pw_page, search_keyword)
-                # Re-attach request listener on the now-filtered page (URL changed)
+                # Best-effort: apply Active/Open status filter to exclude expired solicitations.
+                # Falls through safely if not found — CaptureService._is_deadline_future() is the hard gate.
+                await self._apply_active_filter(pw_page)
                 logger.info(f"[StealthCrawler] Collecting links from filtered URL: {listing_url}")
 
             # Detect total page count from visible pagination buttons
