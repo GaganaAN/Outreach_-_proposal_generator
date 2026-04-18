@@ -19,7 +19,7 @@ import logging
 import secrets
 import threading
 import uuid
-from datetime import datetime as _dt, timedelta
+from datetime import datetime as _dt
 from typing import Optional
 
 from fastapi import (
@@ -27,7 +27,7 @@ from fastapi import (
 )
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
@@ -192,22 +192,14 @@ async def list_solicitations(
             )
         )
     if date_from:
-        try:
-            query = query.filter(Solicitation.created_at >= _dt.strptime(date_from, "%Y-%m-%d"))
-        except ValueError:
-            pass
+        query = query.filter(func.date(Solicitation.created_at) >= date_from)
     if date_to:
-        try:
-            query = query.filter(
-                Solicitation.created_at < _dt.strptime(date_to, "%Y-%m-%d") + timedelta(days=1)
-            )
-        except ValueError:
-            pass
+        query = query.filter(func.date(Solicitation.created_at) <= date_to)
 
     total = query.count()
     sols = (
         query
-        .order_by(Solicitation.scope_match_percentage.desc(), Solicitation.created_at.desc())
+        .order_by(Solicitation.created_at.desc(), Solicitation.scope_match_percentage.desc())
         .offset(skip)
         .limit(limit)
         .all()

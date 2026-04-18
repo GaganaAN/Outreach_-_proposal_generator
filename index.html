@@ -4024,7 +4024,7 @@
                         const sc = statusColors[s.status] || '#9ca3af';
                         const sl = statusLabels[s.status] || s.status;
                         const pct = s.scope_match_percentage ? `${s.scope_match_percentage.toFixed(0)}%` : '';
-                        const capturedOn = s.created_at ? new Date(s.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '';
+                        const capturedOn = s.created_at ? new Date(s.created_at).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true}) : '';
                         return `
                         <div onclick="openCaptureDetail(${s.id})"
                             onmouseenter="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 32px rgba(0,0,0,0.4)';this.style.borderColor='${st.border}';"
@@ -4095,7 +4095,7 @@
                         const statusColors = { new:'#4f8eff', reviewing:'#f0a030', bid:'#10b981', no_bid:'#ef4444', proposal_generated:'#a855f7' };
                         const sc = statusColors[s.status] || '#9ca3af';
                         const pct = s.scope_match_percentage ? `${s.scope_match_percentage.toFixed(0)}%` : '';
-                        const capturedOn = s.created_at ? new Date(s.created_at).toLocaleDateString() : '';
+                        const capturedOn = s.created_at ? new Date(s.created_at).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true}) : '';
                         return `
                         <div class="card" style="margin-bottom:20px;border-left:3px solid ${st.border};cursor:pointer;"
                             onclick="openCaptureDetail(${s.id})">
@@ -4468,13 +4468,6 @@
                     document.getElementById('scan-subtitle').textContent =
                         msgs[msgs.length - 1].replace(/^✓ /, '');
                 }
-
-                // Always refresh the list every poll so newly-saved solicitations appear immediately
-                if (msgs.length > _lastMsgCount) {
-                    _lastMsgCount = msgs.length;
-                }
-                loadCaptureSolicitations();
-                loadCaptureStats();
 
                 if (res.status !== 'running') {
                     _lastMsgCount = 0;

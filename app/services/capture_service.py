@@ -51,14 +51,51 @@ class CaptureService:
             logger.error("[Capture] Scan aborted — no active keyword set. Activate one in the Keywords panel.")
             return 0
 
+        import threading
+        from app.database import SessionLocal
+
+        created = 0
+        _lock = threading.Lock()
+
+        def _on_result_threaded(sub):
+            nonlocal created
+            if is_cancelled and is_cancelled():
+                return
+            thread_db = SessionLocal()
+            try:
+                sol = self._process_sub_result(sub, source.url, keywords, thread_db)
+                if sol:
+                    with _lock:
+                        created += 1
+                    if on_save:
+                        try:
+                            on_save(sol)
+                        except Exception:
+                            pass
+            except Exception as e:
+                logger.error(f"[Capture] Failed to process sub-result {sub.get('url')}: {e}")
+                try:
+                    thread_db.rollback()
+                except Exception:
+                    pass
+            finally:
+                thread_db.close()
+
         try:
             from app.services.stealth_crawler import get_stealth_crawler, run_async
+            from app.models import Solicitation as _Sol
+            existing_urls: set = set(
+                row[0] for row in db.query(_Sol.solicitation_url).all() if row[0]
+            )
+            logger.info(f"[Capture] Pre-filter set: {len(existing_urls)} known URL(s) — skipping these before scraping")
             crawler = get_stealth_crawler()
-            result = run_async(
+            run_async(
                 crawler.crawl_listing(
                     listing_url=source.url,
                     keywords=keywords,
                     authenticated=True,
+                    on_result=_on_result_threaded,
+                    skip_urls=existing_urls,
                 )
             )
         except ImportError:
@@ -67,25 +104,6 @@ class CaptureService:
         except Exception as e:
             logger.error(f"[Capture] Crawl failed for {source.url}: {e}")
             return 0
-
-        created = 0
-        for sub in result.get("sub_results", []):
-            # Check cancellation before each LLM call (which takes ~10-15 s each)
-            if is_cancelled and is_cancelled():
-                logger.info("[Capture] Scan cancelled — stopping between solicitations")
-                break
-            try:
-                sol = self._process_sub_result(sub, source.url, keywords, db)
-                if sol:
-                    created += 1
-                    if on_save:
-                        try:
-                            on_save(sol)
-                        except Exception:
-                            pass
-            except Exception as e:
-                logger.error(f"[Capture] Failed to process sub-result {sub.get('url')}: {e}")
-                db.rollback()
 
         logger.info(f"[Capture] Created {created} new solicitation(s) from {source.name}")
         return created
@@ -130,7 +148,7 @@ class CaptureService:
 
         # Deduplication
         if self._is_duplicate(solicitation_url, db):
-            logger.debug(f"[Capture] Duplicate skipped: {solicitation_url}")
+            logger.info(f"[Capture] Duplicate URL skipped: {solicitation_url}")
             return None
 
         # Build full text: markdown + all PDF contents
@@ -168,7 +186,7 @@ class CaptureService:
                 .first()
             )
             if existing_by_num:
-                logger.debug(
+                logger.info(
                     f"[Capture] Duplicate solicitation_number '{sol_number}' skipped "
                     f"(already id={existing_by_num.id})"
                 )

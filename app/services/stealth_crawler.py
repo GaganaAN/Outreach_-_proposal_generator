@@ -910,13 +910,21 @@ class StealthCrawler:
         listing_url: str,
         keywords: List[str],
         authenticated: bool = True,
+        on_result=None,
+        skip_urls: set = None,
     ) -> Dict[str, Any]:
         """
         Full pipeline for a procurement listing page:
         1. Authenticate (if credentials configured)
         2. Collect all solicitation links across all pages (handles JS pagination)
-        3. Filter links by keyword
-        4. Parallel scrape of each matching link + PDF extraction
+        3. Filter links by keyword; skip URLs already in skip_urls (pre-filtered duplicates)
+        4. Scrape each link + PDF extraction; fire on_result(sub) in a thread after each page
+
+        skip_urls:  optional set of URLs already in the DB — skipped before scraping (no page
+                    fetch, no PDF download, no thread, no LLM call).
+        on_result:  optional sync callable(sub_result) — called in a ThreadPoolExecutor
+                   immediately after each page is scraped so LLM processing overlaps
+                   with scraping of the next page.
 
         Returns:
             {
@@ -957,15 +965,42 @@ class StealthCrawler:
             )
             filtered = filtered[:MAX_TO_SCRAPE]
 
+        # Pre-filter URLs already in DB — skip page fetch + PDF download entirely
+        if skip_urls:
+            pre_filtered = [u for u in filtered if u not in skip_urls]
+            skipped_count = len(filtered) - len(pre_filtered)
+            if skipped_count:
+                logger.info(
+                    f"[StealthCrawler] Pre-filtered {skipped_count} known URL(s) "
+                    f"— {len(pre_filtered)} remaining to scrape"
+                )
+            filtered = pre_filtered
+
         sub_results = []
+        pending_llm: list = []
+
         for i, url in enumerate(filtered):
             logger.info(f"[StealthCrawler] Scraping {i+1}/{len(filtered)}: {url}")
             try:
                 result = await asyncio.wait_for(self._scrape_single(url), timeout=120)
                 sub_results.append(result)
+                if on_result:
+                    # Fire LLM processing in a thread immediately — don't block next scrape
+                    loop = asyncio.get_running_loop()
+                    fut = loop.run_in_executor(None, on_result, result)
+                    pending_llm.append(fut)
+                    logger.info(f"[StealthCrawler] LLM thread queued for {result.get('url', url)}")
             except asyncio.TimeoutError:
                 logger.warning(f"[StealthCrawler] Timeout scraping {url} — skipped")
                 sub_results.append({"url": url, "status": "timeout", "markdown": "", "pdf_contents": {}})
+
+        # Wait for all in-flight LLM calls to finish before returning
+        if pending_llm:
+            logger.info(f"[StealthCrawler] Waiting for {len(pending_llm)} LLM thread(s) to finish…")
+            thread_results = await asyncio.gather(*pending_llm, return_exceptions=True)
+            for r in thread_results:
+                if isinstance(r, Exception):
+                    logger.error(f"[StealthCrawler] LLM thread raised: {r}")
 
         return {
             "listing_url":    listing_url,
