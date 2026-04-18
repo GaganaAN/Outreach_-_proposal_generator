@@ -237,8 +237,10 @@ class CaptureService:
         """Run CAPTURE_QUALIFICATION_PROMPT against full_text via LLM."""
         from app.core.prompts import CAPTURE_QUALIFICATION_PROMPT
         from app.core.llm_client import get_llm_client
+        from app.core.kb_loader import get_company_kb
 
         prompt = CAPTURE_QUALIFICATION_PROMPT.format(
+            company_profile=get_company_kb(),
             keyword=keyword or "IT services",
             solicitation_url=solicitation_url,
             rfp_text=full_text,

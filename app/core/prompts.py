@@ -263,11 +263,8 @@ Return ONLY the JSON object:"""
 
 CAPTURE_QUALIFICATION_PROMPT = """You are a capture analyst extracting structured qualification data from a government solicitation for Ivoyant Systems.
 
-Ivoyant Systems Profile (for scope matching):
-- Core capabilities: Data Engineering, Cloud Migration (AWS/Azure/GCP), Business Intelligence & Analytics,
-  Machine Learning / AI, API Integration, DevOps & Platform Engineering, Cybersecurity, System Modernization
-- NAICS focus: IT services, software development, data platforms, managed services
-- Company size: Mid-size IT services firm
+Company Knowledge Base (past performance, capabilities, and evidence — use this to assess scope match):
+{company_profile}
 
 Search keyword that triggered this discovery: {keyword}
 Solicitation source URL: {solicitation_url}
