@@ -9,6 +9,19 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@400;500&family=Geist:wght@300;400;500;600&display=swap"
         rel="stylesheet">
+    <script>
+        (() => {
+            try {
+                const savedTheme = localStorage.getItem('ui_theme');
+                const theme = savedTheme === 'light' || savedTheme === 'dark'
+                    ? savedTheme
+                    : (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+                document.documentElement.setAttribute('data-theme', theme);
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     <style>
         /* ─── Reset ─────────────────────────────────────────────── */
         *,
@@ -26,14 +39,21 @@
             --raised: #141a28;
             --border: #1e2740;
             --border2: #2a3554;
+            --card: #101726;
+            --card-bg: #151d2d;
+            --fg: #dde2f0;
+            --accent: #d4f74e;
 
             --lime: #d4f74e;
+            --lime-hover: #c5eb3a;
             --lime-dim: rgba(212, 247, 78, .12);
             --blue: #4f8eff;
             --blue-dim: rgba(79, 142, 255, .12);
             --green: #2dd4a0;
             --red: #ff6060;
             --amber: #f0a030;
+            --on-lime: #080b12;
+            --error-soft: #ff9090;
 
             --text: #dde2f0;
             --sub: #8892aa;
@@ -47,6 +67,38 @@
             --r-md: 12px;
             --r-lg: 18px;
             --r-xl: 24px;
+        }
+
+        html[data-theme="light"] {
+            color-scheme: light;
+            --bg: #f4f7fb;
+            --surface: #ffffff;
+            --raised: #edf2f8;
+            --border: #d7e0ec;
+            --border2: #c5d0df;
+            --card: #ffffff;
+            --card-bg: #f2f5fa;
+            --fg: #172033;
+            --accent: #728f13;
+
+            --lime: #728f13;
+            --lime-hover: #617a10;
+            --lime-dim: rgba(114, 143, 19, .12);
+            --blue: #2563eb;
+            --blue-dim: rgba(37, 99, 235, .12);
+            --green: #0f9f6e;
+            --red: #dc2626;
+            --amber: #b9770e;
+            --on-lime: #f8fafc;
+            --error-soft: #b91c1c;
+
+            --text: #172033;
+            --sub: #57657e;
+            --dim: #8390a6;
+        }
+
+        html[data-theme="dark"] {
+            color-scheme: dark;
         }
 
         html {
@@ -282,6 +334,21 @@
             gap: 10px;
         }
 
+        .theme-toggle {
+            min-width: 92px;
+            justify-content: center;
+            gap: 8px;
+            padding: 0 14px;
+            font-family: var(--mono);
+            font-size: .7rem;
+            letter-spacing: .04em;
+        }
+
+        .theme-toggle-icon {
+            font-size: .95rem;
+            line-height: 1;
+        }
+
         .api-status {
             display: inline-flex;
             align-items: center;
@@ -429,7 +496,7 @@
             padding: 0 28px;
             height: 52px;
             background: var(--lime);
-            color: var(--bg);
+            color: var(--on-lime);
             border: none;
             border-radius: var(--r-md);
             font-family: var(--sans);
@@ -445,7 +512,7 @@
         }
 
         .gen-btn:hover:not(:disabled) {
-            background: #c5eb3a;
+            background: var(--lime-hover);
             transform: translateY(-1px);
             box-shadow: 0 8px 24px rgba(212, 247, 78, .2);
         }
@@ -459,13 +526,17 @@
 
         /* Force dark background on all native select dropdowns */
         select option {
-            background-color: #1a1f2e;
-            color: #e2e8f0;
+            background-color: var(--surface);
+            color: var(--text);
         }
 
-        /* Date input calendar icon — white on dark */
+        /* Date input calendar icon follows the active theme */
         input[type="date"] {
             color-scheme: dark;
+        }
+
+        html[data-theme="light"] input[type="date"] {
+            color-scheme: light;
         }
 
         .gen-spinner {
@@ -507,7 +578,7 @@
             border-radius: var(--r-sm);
             padding: 11px 16px;
             font-size: .85rem;
-            color: #ff9090;
+            color: var(--error-soft);
             display: none;
         }
 
@@ -975,11 +1046,11 @@
 
         .btn-lime {
             background: var(--lime);
-            color: var(--bg);
+            color: var(--on-lime);
         }
 
         .btn-lime:hover {
-            background: #c5eb3a;
+            background: var(--lime-hover);
             transform: translateY(-1px);
         }
 
@@ -1041,8 +1112,8 @@
             background: var(--surface);
             border: 1px solid var(--border2);
             border-radius: var(--r-xl);
-            width: 540px;
-            max-width: 95vw;
+            width: 90vw;
+            max-width: 1020px;
             max-height: 90vh;
             overflow-y: auto;
             animation: slideUp .22s cubic-bezier(.22, 1, .36, 1);
@@ -1509,6 +1580,11 @@
                 <span class="page-badge" id="page-badge">Generator</span>
             </div>
             <div class="topbar-right">
+                <button class="btn btn-ghost btn-sm theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()"
+                    title="Switch color theme" aria-label="Switch color theme">
+                    <span class="theme-toggle-icon" id="theme-toggle-icon">☀</span>
+                    <span id="theme-toggle-label">Light</span>
+                </button>
                 <div class="api-status"><span class="pulse-dot"></span> API Ready</div>
                 <span class="sync-badge ok" id="sync-badge" style="display:none">
                     <span class="pulse-dot"></span> Synced
@@ -2163,7 +2239,7 @@
         <!-- ══ CAPTURE: Solicitation Detail Modal ════════════════════ -->
         <div class="overlay" id="capture-detail-overlay" style="display:none;"
             onclick="if(event.target===this)closeCaptureDetail()">
-            <div class="modal" style="max-width:860px;max-height:92vh;overflow-y:auto;padding:32px;">
+            <div class="modal" style="max-width:1020px;max-height:92vh;overflow-y:auto;padding:32px;">
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;gap:16px;">
                     <div>
                         <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
@@ -2669,9 +2745,49 @@
     <script>
         /* ─── State ──────────────────────────────────────────────── */
         const ADMIN = '/api/admin';
+        const THEME_KEY = 'ui_theme';
         let CREDS = btoa('admin:ivoyant@admin');
         let allRows = [];
         let deleteId = null;
+
+        function getPreferredTheme() {
+            const savedTheme = localStorage.getItem(THEME_KEY);
+            if (savedTheme === 'light' || savedTheme === 'dark') return savedTheme;
+            return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        }
+
+        function updateThemeToggle(theme) {
+            const icon = document.getElementById('theme-toggle-icon');
+            const label = document.getElementById('theme-toggle-label');
+            const btn = document.getElementById('theme-toggle-btn');
+            if (!icon || !label || !btn) return;
+            const nextTheme = theme === 'dark' ? 'light' : 'dark';
+            icon.textContent = theme === 'dark' ? '☀' : '☾';
+            label.textContent = theme === 'dark' ? 'Light' : 'Dark';
+            btn.title = `Switch to ${nextTheme} theme`;
+            btn.setAttribute('aria-label', `Switch to ${nextTheme} theme`);
+        }
+
+        function applyTheme(theme, persist = false) {
+            document.documentElement.setAttribute('data-theme', theme);
+            updateThemeToggle(theme);
+            if (persist) localStorage.setItem(THEME_KEY, theme);
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || getPreferredTheme();
+            applyTheme(currentTheme === 'dark' ? 'light' : 'dark', true);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            applyTheme(getPreferredTheme());
+        });
+
+        window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', (event) => {
+            if (!localStorage.getItem(THEME_KEY)) {
+                applyTheme(event.matches ? 'light' : 'dark');
+            }
+        });
 
         /* ─── Sidebar Toggle ──────────────────────────────────────── */
         function toggleSidebar() {
@@ -2722,6 +2838,7 @@
 
         /* poll notification badge on load + every 30 s */
         window.addEventListener('load', () => {
+            applyTheme(getPreferredTheme());
             updateNotifBadge();
             loadOppStatsBadge();
             setInterval(updateNotifBadge, 30000);

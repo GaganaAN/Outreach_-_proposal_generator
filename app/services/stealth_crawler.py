@@ -87,6 +87,14 @@ class StealthCrawler:
     # ── Session lifecycle ──────────────────────────────────────────────────────
 
     async def start_session(self):
+        # Reset stale session — context becomes None when browser crashes or was closed
+        if self.session is not None:
+            ctx = getattr(self.session, "context", None)
+            if ctx is None:
+                logger.warning("[StealthCrawler] Stale session detected (context is None) — reinitializing")
+                self.session = None
+                self.is_logged_in = {}
+
         if self.session is None:
             from scrapling.fetchers import AsyncStealthySession
             logger.info("[StealthCrawler] Starting persistent stealth session")
