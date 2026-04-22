@@ -83,6 +83,11 @@ class StealthCrawler:
         self.session = None                          # AsyncStealthySession (persistent)
         self.is_logged_in: Dict[str, bool] = {}
         self._semaphore: Optional[asyncio.Semaphore] = None
+        # Bounded executor for LLM calls — prevents parallel 429s from Azure/Groq
+        import concurrent.futures
+        self._llm_executor = concurrent.futures.ThreadPoolExecutor(
+            max_workers=max_concurrent, thread_name_prefix="capture-llm"
+        )
 
     # ── Session lifecycle ──────────────────────────────────────────────────────
 
@@ -993,9 +998,9 @@ class StealthCrawler:
                 result = await asyncio.wait_for(self._scrape_single(url), timeout=120)
                 sub_results.append(result)
                 if on_result:
-                    # Fire LLM processing in a thread immediately — don't block next scrape
+                    # Fire LLM processing in a bounded executor — prevents concurrent 429s
                     loop = asyncio.get_running_loop()
-                    fut = loop.run_in_executor(None, on_result, result)
+                    fut = loop.run_in_executor(self._llm_executor, on_result, result)
                     pending_llm.append(fut)
                     logger.info(f"[StealthCrawler] LLM thread queued for {result.get('url', url)}")
             except asyncio.TimeoutError:

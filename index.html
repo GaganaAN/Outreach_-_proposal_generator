@@ -2201,16 +2201,24 @@
                         <option value="Medium">Medium Match</option>
                         <option value="Low">Low Match</option>
                     </select>
+                    <!-- Sort order -->
+                    <select id="capture-sort" onchange="loadCaptureSolicitations()"
+                        style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:7px 12px;color:var(--fg);">
+                        <option value="deadline_asc">Deadline ↑ (soonest first)</option>
+                        <option value="deadline_desc">Deadline ↓ (latest first)</option>
+                        <option value="score_desc">Score (high → low)</option>
+                        <option value="captured_desc">Captured (newest first)</option>
+                    </select>
                     <!-- Date range -->
                     <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
                         <span style="font-size:12px;color:var(--sub);white-space:nowrap;">Captured:</span>
                         <input id="capture-date-from" type="date" onchange="loadCaptureSolicitations()"
                             title="From date"
-                            style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--fg);font-size:13px;color-scheme:dark;" />
+                            style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--fg);font-size:13px;color-scheme:dark;width:150px;min-width:150px;" />
                         <span style="font-size:12px;color:var(--sub);">–</span>
                         <input id="capture-date-to" type="date" onchange="loadCaptureSolicitations()"
                             title="To date"
-                            style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--fg);font-size:13px;color-scheme:dark;" />
+                            style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--fg);font-size:13px;color-scheme:dark;width:150px;min-width:150px;" />
                         <button onclick="setCaptureFilterToday()" class="btn btn-ghost" style="font-size:12px;padding:6px 11px;white-space:nowrap;">📅 Today</button>
                         <button id="capture-date-clear" onclick="clearCaptureDateFilter()" class="btn btn-ghost"
                             style="font-size:12px;padding:6px 11px;color:#ef4444;display:none;">✕ Clear</button>
@@ -2249,7 +2257,7 @@
                         <div style="color:var(--sub);font-size:13px;">
                             <span id="cd-agency"></span> &nbsp;·&nbsp;
                             <span id="cd-number"></span> &nbsp;·&nbsp;
-                            Deadline: <strong id="cd-deadline"></strong>
+                            Deadline: <strong id="cd-deadline"></strong> <span id="cd-expiry-badge"></span>
                         </div>
                     </div>
                     <button onclick="closeCaptureDetail()" style="background:none;border:none;color:var(--sub);font-size:20px;cursor:pointer;flex-shrink:0;">✕</button>
@@ -4049,6 +4057,30 @@
         /* ══ CAPTURE MANAGEMENT ══════════════════════════════════════ */
 
         let _currentSolicitationId = null;
+        let _solicitationsCache = {};   // id → full solicitation object
+        let _captureLoadPending = false; // debounce guard
+
+        /* ── Deadline expiry badge ───────────────────────────────────── */
+        function expiryBadge(deadlineStr) {
+            if (!deadlineStr) return '';
+            // Normalize common government deadline formats before parsing:
+            // "April 20, 2026, 2:00 p.m. EDT" → "April 20, 2026 2:00 PM"
+            let normalized = deadlineStr
+                .replace(/\bp\.m\./gi, 'PM')
+                .replace(/\ba\.m\./gi, 'AM')
+                .replace(/\s+(EDT|EST|CDT|CST|MDT|MST|PDT|PST|UTC)\b/gi, '')
+                .replace(/,(\s*\d{1,2}:\d{2})/, ' $1')  // remove comma before time
+                .trim();
+            const d = new Date(normalized);
+            if (isNaN(d.getTime())) return '';
+            const now = new Date();
+            const daysLeft = Math.ceil((d - now) / (1000 * 60 * 60 * 24));
+            if (daysLeft < 0)  return `<span style="background:#3b0a0a;color:#ef4444;border:1px solid #ef444455;border-radius:9999px;font-size:10px;font-weight:700;padding:2px 8px;white-space:nowrap;">EXPIRED</span>`;
+            if (daysLeft <= 3) return `<span style="background:#3b0a0a;color:#ef4444;border:1px solid #ef444455;border-radius:9999px;font-size:10px;font-weight:700;padding:2px 8px;white-space:nowrap;">🔴 ${daysLeft}d left</span>`;
+            if (daysLeft <= 7) return `<span style="background:#1c1400;color:#f97316;border:1px solid #f9731655;border-radius:9999px;font-size:10px;font-weight:700;padding:2px 8px;white-space:nowrap;">🟠 ${daysLeft}d left</span>`;
+            if (daysLeft <= 14) return `<span style="background:#1c1a00;color:#eab308;border:1px solid #eab30855;border-radius:9999px;font-size:10px;font-weight:700;padding:2px 8px;white-space:nowrap;">🟡 ${daysLeft}d left</span>`;
+            return `<span style="background:#052e16;color:#10b981;border:1px solid #10b98155;border-radius:9999px;font-size:10px;font-weight:600;padding:2px 8px;white-space:nowrap;">🟢 ${daysLeft}d left</span>`;
+        }
 
         /* ── Scope level badge style ─────────────────────────────────── */
         function scopeStyle(level) {
@@ -4104,6 +4136,7 @@
         async function loadCaptureSolicitations() {
             const statusFilter = document.getElementById('capture-filter-status').value;
             const scopeFilter  = document.getElementById('capture-filter-scope').value;
+            const sortOrder    = document.getElementById('capture-sort')?.value || 'deadline_asc';
             const searchVal    = (document.getElementById('capture-search')?.value || '').trim();
             const dateFrom     = document.getElementById('capture-date-from')?.value || '';
             const dateTo       = document.getElementById('capture-date-to')?.value || '';
@@ -4111,6 +4144,7 @@
             let path = '/solicitations/?limit=50';
             if (statusFilter) path += '&sol_status='  + encodeURIComponent(statusFilter);
             if (scopeFilter)  path += '&scope_level=' + encodeURIComponent(scopeFilter);
+            if (sortOrder)    path += '&sort='        + encodeURIComponent(sortOrder);
             if (searchVal)    path += '&search='      + encodeURIComponent(searchVal);
             if (dateFrom)     path += '&date_from='   + encodeURIComponent(dateFrom);
             if (dateTo)       path += '&date_to='     + encodeURIComponent(dateTo);
@@ -4120,10 +4154,16 @@
             if (clearBtn) clearBtn.style.display = (dateFrom || dateTo) ? 'inline-block' : 'none';
 
             const container = document.getElementById('capture-list');
-            container.innerHTML = '<p style="color:var(--sub);">Loading…</p>';
+            // Show cached data immediately if available, fetch fresh in background
+            const hasCached = Object.keys(_solicitationsCache).length > 0;
+            if (!hasCached) container.innerHTML = '<p style="color:var(--sub);">Loading…</p>';
+            if (_captureLoadPending) return;
+            _captureLoadPending = true;
             try {
                 const res = await adminFetch('GET', path);
                 const sols = res.solicitations || [];
+                // Populate cache with full solicitation objects
+                sols.forEach(s => { _solicitationsCache[s.id] = s; });
                 if (!sols.length) {
                     container.innerHTML = `<p style="color:var(--sub);padding:20px 0;">No solicitations found. Add a procurement source in Lead Discovery or click <strong>Scan Now</strong>.</p>`;
                     return;
@@ -4140,7 +4180,6 @@
                         const statusLabels = { new:'New', reviewing:'Reviewing', bid:'Bid', no_bid:'No Bid', proposal_generated:'Proposal Generated' };
                         const sc = statusColors[s.status] || '#9ca3af';
                         const sl = statusLabels[s.status] || s.status;
-                        const pct = s.scope_match_percentage ? `${s.scope_match_percentage.toFixed(0)}%` : '';
                         const capturedOn = s.created_at ? new Date(s.created_at).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true}) : '';
                         return `
                         <div onclick="openCaptureDetail(${s.id})"
@@ -4158,7 +4197,7 @@
                                     <span style="font-family:var(--mono);font-size:11px;color:#a855f7;font-weight:600;letter-spacing:.5px;">${s.capture_id || '—'}</span>
                                     <span style="padding:4px 11px;border-radius:20px;font-size:11px;font-weight:700;
                                                  background:${st.bg};border:1px solid ${st.border};color:${st.color};white-space:nowrap;">
-                                        ${s.scope_match_level || 'Low'} ${pct}
+                                        ${s.scope_match_level || 'Low'}
                                     </span>
                                 </div>
                                 <!-- Row 2: title (capped at 3 lines) -->
@@ -4173,13 +4212,14 @@
                                 </div>
                                 <!-- Divider -->
                                 <div style="border-top:1px solid var(--border);"></div>
-                                <!-- Row 4: deadline + captured -->
+                                <!-- Row 4: deadline + expiry badge + captured -->
                                 <div style="display:flex;flex-direction:column;gap:5px;font-size:12px;">
                                     ${s.response_deadline ? `
-                                    <div style="display:flex;align-items:center;gap:6px;">
+                                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
                                         <span style="color:var(--amber);">⏰</span>
                                         <span style="color:var(--sub);">Deadline:</span>
                                         <strong style="color:var(--text);">${s.response_deadline}</strong>
+                                        ${expiryBadge(s.response_deadline)}
                                     </div>` : ''}
                                     ${capturedOn ? `
                                     <div style="display:flex;align-items:center;gap:6px;">
@@ -4211,7 +4251,6 @@
                         const st = scopeStyle(s.scope_match_level);
                         const statusColors = { new:'#4f8eff', reviewing:'#f0a030', bid:'#10b981', no_bid:'#ef4444', proposal_generated:'#a855f7' };
                         const sc = statusColors[s.status] || '#9ca3af';
-                        const pct = s.scope_match_percentage ? `${s.scope_match_percentage.toFixed(0)}%` : '';
                         const capturedOn = s.created_at ? new Date(s.created_at).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true}) : '';
                         return `
                         <div class="card" style="margin-bottom:20px;border-left:3px solid ${st.border};cursor:pointer;"
@@ -4224,13 +4263,13 @@
                                     <div style="font-size:12px;color:var(--sub);">
                                         <span style="font-family:monospace;font-size:11px;color:#a855f7;font-weight:600;">${s.capture_id || ''}</span>
                                         &nbsp;·&nbsp; ${s.agency || ''} &nbsp;·&nbsp; Keyword: <em>${s.keyword_matched || ''}</em>
-                                        ${s.response_deadline ? ` &nbsp;·&nbsp; Deadline: <strong>${s.response_deadline}</strong>` : ''}
+                                        ${s.response_deadline ? ` &nbsp;·&nbsp; Deadline: <strong>${s.response_deadline}</strong> ${expiryBadge(s.response_deadline)}` : ''}
                                         ${capturedOn ? ` &nbsp;·&nbsp; Captured: ${capturedOn}` : ''}
                                     </div>
                                 </div>
                                 <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
                                     <span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;background:${st.bg};border:1px solid ${st.border};color:${st.color};">
-                                        ${s.scope_match_level || 'Low'} ${pct}
+                                        ${s.scope_match_level || 'Low'}
                                     </span>
                                     <span style="padding:2px 8px;border-radius:10px;font-size:11px;background:${sc}22;border:1px solid ${sc};color:${sc};">
                                         ${s.status.replace('_',' ')}
@@ -4242,6 +4281,8 @@
                 }
             } catch (e) {
                 container.innerHTML = `<p style="color:#ef4444;">Error: ${e.message}</p>`;
+            } finally {
+                _captureLoadPending = false;
             }
         }
 
@@ -4306,16 +4347,22 @@
             _currentSolicitationId = id;
             const overlay = document.getElementById('capture-detail-overlay');
             overlay.style.display = 'flex';
-            document.getElementById('cd-title').textContent = 'Loading…';
             document.getElementById('cd-action-msg').style.display = 'none';
 
+            // Use cached data for instant render; only fetch if not cached
+            const cached = _solicitationsCache[id];
+            if (!cached) {
+                document.getElementById('cd-title').textContent = 'Loading…';
+            }
+
             try {
-                const s = await adminFetch('GET', `/solicitations/${id}`);
+                const s = cached || await adminFetch('GET', `/solicitations/${id}`);
 
                 document.getElementById('cd-title').textContent     = s.title || '(No title)';
                 document.getElementById('cd-agency').textContent    = s.agency || '';
                 document.getElementById('cd-number').textContent    = s.solicitation_number || '';
                 document.getElementById('cd-deadline').textContent  = s.response_deadline || 'Not specified';
+                document.getElementById('cd-expiry-badge').innerHTML = expiryBadge(s.response_deadline || '');
                 const captureIdEl = document.getElementById('cd-capture-id');
                 if (captureIdEl) captureIdEl.textContent = s.capture_id || '';
 
@@ -4325,7 +4372,7 @@
                 badge.style.background = st.bg;
                 badge.style.border     = `1px solid ${st.border}`;
                 badge.style.color      = st.color;
-                badge.textContent      = `${s.scope_match_level || 'Low'} Match  ${s.scope_match_percentage?.toFixed(0) || 0}%`;
+                badge.textContent      = `${s.scope_match_level || 'Low'} Match`;
 
                 // Source link
                 const sourceRow = document.getElementById('cd-source-row');
@@ -4481,6 +4528,8 @@
                 // Show/hide generate proposal button
                 const genBtn = document.getElementById('cd-gen-proposal-btn');
                 genBtn.style.display = (newStatus === 'bid') ? 'block' : 'none';
+                // Invalidate cache entry so next open re-fetches fresh data
+                delete _solicitationsCache[_currentSolicitationId];
                 toast(`Status updated to: ${newStatus.replace('_',' ')}`, 'success');
             } catch (e) {
                 msg.style.display = 'block';

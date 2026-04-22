@@ -169,6 +169,7 @@ async def list_solicitations(
     search: Optional[str] = None,
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
+    sort: Optional[str] = "deadline_asc",
     db: Session = Depends(get_db),
     _: str = Depends(verify_admin),
 ):
@@ -197,13 +198,57 @@ async def list_solicitations(
         query = query.filter(func.date(Solicitation.created_at) <= date_to)
 
     total = query.count()
-    sols = (
-        query
-        .order_by(Solicitation.created_at.desc(), Solicitation.scope_match_percentage.desc())
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
+
+    # Fetch with a basic DB-level ordering for non-deadline sorts
+    # Deadline sorts are done in Python because deadlines are stored in mixed
+    # text formats ("2026-05-30", "April 20, 2026, 3:00 p.m. EDT", etc.)
+    # that SQLite cannot compare correctly as strings.
+    if sort in ("score_desc",):
+        sols = (
+            query
+            .order_by(Solicitation.scope_match_percentage.desc(), Solicitation.created_at.desc())
+            .offset(skip).limit(limit).all()
+        )
+    elif sort == "captured_desc":
+        sols = (
+            query
+            .order_by(Solicitation.created_at.desc())
+            .offset(skip).limit(limit).all()
+        )
+    else:
+        # deadline_asc / deadline_desc — fetch all filtered, sort in Python
+        all_sols = query.all()
+
+        def _parse_dl(s):
+            import re as _re
+            from datetime import datetime as _dt
+            if not s:
+                return None
+            norm = s.replace('p.m.', 'PM').replace('a.m.', 'AM')
+            norm = _re.sub(r'\s+(EDT|EST|CDT|CST|MDT|MST|PDT|PST|UTC|Mountain Time|Eastern Time)\b', '', norm, flags=_re.I)
+            norm = _re.sub(r',(\s*\d{1,2}:\d{2})', r' \1', norm).strip()
+            month_map = {
+                'Jan': 'January', 'Feb': 'February', 'Mar': 'March', 'Apr': 'April',
+                'Jun': 'June', 'Jul': 'July', 'Aug': 'August', 'Sep': 'September',
+                'Oct': 'October', 'Nov': 'November', 'Dec': 'December'
+            }
+            for abbr, full in month_map.items():
+                norm = _re.sub(rf'\b{abbr}\.', full, norm)
+            for fmt in ('%Y-%m-%d', '%B %d, %Y %I:%M %p', '%B %d, %Y %I %p', '%B %d, %Y'):
+                try:
+                    return _dt.strptime(norm if '%B' in fmt else norm[:10], fmt).date()
+                except Exception:
+                    pass
+            return None
+
+        reverse = (sort == "deadline_desc")
+        sols = sorted(
+            all_sols,
+            key=lambda s: (_parse_dl(s.response_deadline) is None, _parse_dl(s.response_deadline)),
+            reverse=reverse
+        )
+        sols = sols[skip: skip + limit]
+
     return {"total": total, "solicitations": [s.to_dict() for s in sols]}
 
 

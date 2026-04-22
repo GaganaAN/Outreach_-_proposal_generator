@@ -160,8 +160,12 @@ class CaptureService:
             logger.warning(f"[Capture] Too little content ({len(full_text.strip())} chars) at {solicitation_url} — skipping")
             return None
 
-        # Determine which keyword matched (from URL or content)
-        matched_keyword = self._find_matched_keyword(solicitation_url + " " + full_text[:2000], keywords)
+        # Determine which keyword matched — search full text, not just first 2000 chars
+        matched_keyword = self._find_matched_keyword(solicitation_url + " " + full_text, keywords)
+        if not matched_keyword and keywords:
+            # Fallback: use first keyword so LLM still has an anchor for paragraph extraction
+            matched_keyword = keywords[0]
+            logger.debug(f"[Capture] No keyword found in content — using fallback '{matched_keyword}'")
 
         # Run LLM extraction
         extraction = self._extract_qualification(full_text, matched_keyword, solicitation_url)
@@ -452,13 +456,48 @@ class CaptureService:
         return keywords[0] if keywords else ""
 
     def _is_duplicate(self, solicitation_url: str, db) -> bool:
+        """
+        Returns True (skip) if the URL was scraped MORE than 24 hours ago — it's stale but
+        not worth re-processing every run.
+        Returns False (process) if:
+          - URL has never been seen before, OR
+          - URL was seen within the last 24 hours (solicitation may have been updated —
+            delete old record and re-qualify with fresh data)
+        """
+        from datetime import datetime, timezone
         from app.models import Solicitation
         existing = (
             db.query(Solicitation)
             .filter(Solicitation.solicitation_url == solicitation_url)
             .first()
         )
-        return existing is not None
+        if not existing:
+            return False  # new URL — process it
+
+        age_hours = None
+        if existing.created_at:
+            created = existing.created_at
+            if created.tzinfo is None:
+                created = created.replace(tzinfo=timezone.utc)
+            age_hours = (datetime.now(timezone.utc) - created).total_seconds() / 3600
+
+        if age_hours is not None and age_hours <= 24:
+            # Seen within last 24h — too soon to re-process, nothing meaningful would have changed
+            logger.info(f"[Capture] URL seen {age_hours:.1f}h ago (within 24h) — keeping existing record")
+            return True  # skip
+
+        # Older than 24h — solicitation may have been updated, replace with fresh data
+        logger.info(
+            f"[Capture] URL last seen {age_hours:.1f}h ago (>24h) — "
+            f"replacing record id={existing.id} with fresh qualification: {solicitation_url}"
+        )
+        try:
+            db.delete(existing)
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logger.warning(f"[Capture] Failed to delete old record for replacement: {e}")
+        return False  # allow re-processing with fresh data
 
 
 # ── Singleton ──────────────────────────────────────────────────────────────────
