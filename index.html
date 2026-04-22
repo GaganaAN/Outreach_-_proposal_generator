@@ -4442,7 +4442,7 @@
                         const solId = s.id;
                         return `<div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                             <span style="font-size:13px;">📄 ${name}</span>
-                            <button onclick="downloadAttachment(${solId}, '${encodedUrl}', '${encodedName}')"
+                            <button onclick="downloadAttachment(${solId}, '${encodedUrl}', '${encodedName}', this)"
                                style="color:#10b981;font-size:12px;padding:3px 10px;border:1px solid #10b981;border-radius:5px;background:transparent;cursor:pointer;white-space:nowrap;">
                                 ↓ Download PDF
                             </button>
@@ -4480,11 +4480,17 @@
         }
 
         /* ── Proxy-download a solicitation attachment ─────────────────── */
-        async function downloadAttachment(solId, encodedUrl, encodedName) {
+        async function downloadAttachment(solId, encodedUrl, encodedName, btn) {
             const url = decodeURIComponent(encodedUrl);
             const name = decodeURIComponent(encodedName);
             const filename = name.toLowerCase().endsWith('.pdf') ? name : name + '.pdf';
             const proxyPath = `/solicitations/${solId}/download-attachment?url=${encodedUrl}&name=${encodedName}`;
+
+            // Show downloading state on the button
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:5px;"><svg style="animation:spin 1s linear infinite;width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>Downloading…</span>';
+
             try {
                 const resp = await fetch(ADMIN + proxyPath, {
                     headers: { 'Authorization': 'Basic ' + CREDS }
@@ -4503,9 +4509,20 @@
                 a.click();
                 a.remove();
                 URL.revokeObjectURL(objUrl);
+                // Brief "Done" confirmation
+                btn.innerHTML = '✓ Downloaded';
+                btn.style.color = '#86efac';
+                btn.style.borderColor = '#86efac';
+                setTimeout(() => { btn.innerHTML = originalHtml; btn.style.color = ''; btn.style.borderColor = ''; btn.disabled = false; }, 2000);
+                return;
             } catch (e) {
                 alert('Download error: ' + e.message);
             }
+            // Restore on error
+            btn.innerHTML = originalHtml;
+            btn.style.color = '';
+            btn.style.borderColor = '';
+            btn.disabled = false;
         }
 
         /* ── Save bid/no-bid decision ────────────────────────────────── */

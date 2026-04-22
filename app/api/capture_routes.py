@@ -572,23 +572,7 @@ async def download_attachment(
     if not filename.lower().endswith(".pdf"):
         filename += ".pdf"
 
-    try:
-        # Try plain httpx first — only accept if response is actually a PDF file
-        import httpx
-        async with httpx.AsyncClient(follow_redirects=True, timeout=30) as client:
-            resp = await client.get(url, headers={"User-Agent": "Mozilla/5.0"})
-            ct = resp.headers.get("content-type", "")
-            is_pdf = resp.content[:4] == b"%PDF" or "pdf" in ct.lower()
-            if resp.status_code == 200 and is_pdf and len(resp.content) > 500:
-                return Response(
-                    content=resp.content,
-                    media_type="application/pdf",
-                    headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-                )
-    except Exception:
-        pass
-
-    # Fallback: use stealth crawler (handles auth-gated PDFs)
+    # Primary: stealth crawler with auth session (handles HigherGov auth-gated PDFs)
     try:
         from app.services.stealth_crawler import get_stealth_crawler, run_async
         crawler = get_stealth_crawler()
@@ -600,7 +584,23 @@ async def download_attachment(
                 headers={"Content-Disposition": f'attachment; filename="{filename}"'},
             )
     except Exception as e:
-        logger.error(f"[Capture] Attachment download failed for {url}: {e}")
+        logger.error(f"[Capture] Stealth crawler attachment download failed for {url}: {e}")
+
+    # Fallback: plain httpx for publicly accessible PDFs (no auth required)
+    try:
+        import httpx
+        async with httpx.AsyncClient(follow_redirects=True, timeout=30) as client:
+            resp = await client.get(url, headers={"User-Agent": "Mozilla/5.0"})
+            ct = resp.headers.get("content-type", "")
+            is_pdf = resp.content[:4] == b"%PDF" or "pdf" in ct.lower()
+            if resp.status_code == 200 and is_pdf and len(resp.content) > 500:
+                return Response(
+                    content=resp.content,
+                    media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+                )
+    except Exception as e:
+        logger.error(f"[Capture] Plain httpx attachment download failed for {url}: {e}")
 
     raise HTTPException(
         status_code=502,

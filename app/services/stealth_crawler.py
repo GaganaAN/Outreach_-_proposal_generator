@@ -773,6 +773,9 @@ class StealthCrawler:
         session = await self.start_session()
         full_url = doc_url if doc_url.startswith("http") else self.HIGHERGOV_BASE + doc_url
 
+        # Ensure we're authenticated — HigherGov now requires a session for /document/ URLs
+        await self._ensure_auth(full_url)
+
         for attempt in range(1, retries + 1):
             try:
                 result = await self._fetch_pdf_bytes_core(session, full_url)
