@@ -98,6 +98,11 @@ class ScanUrlRequest(BaseModel):
     url: str
 
 
+# TEST MODE — REMOVE BEFORE DEPLOY
+class ScanNowRequest(BaseModel):
+    test_mode: bool = False
+
+
 class GenerateProposalRequest(BaseModel):
     llm_provider: Optional[str] = None  # groq | openai | gemini | None → default
 
@@ -138,14 +143,15 @@ async def solicitation_stats(
     _: str = Depends(verify_admin),
 ):
     """Dashboard counts for the Capture Management tab."""
-    total       = db.query(Solicitation).count()
-    new_count   = db.query(Solicitation).filter(Solicitation.status == "new").count()
-    reviewing   = db.query(Solicitation).filter(Solicitation.status == "reviewing").count()
-    bid_count   = db.query(Solicitation).filter(Solicitation.status == "bid").count()
-    no_bid      = db.query(Solicitation).filter(Solicitation.status == "no_bid").count()
-    generated   = db.query(Solicitation).filter(Solicitation.status == "proposal_generated").count()
-    high_match  = db.query(Solicitation).filter(Solicitation.scope_match_level == "High").count()
-    medium_match = db.query(Solicitation).filter(Solicitation.scope_match_level == "Medium").count()
+    _active = Solicitation.is_deleted != True
+    total       = db.query(Solicitation).filter(_active).count()
+    new_count   = db.query(Solicitation).filter(_active, Solicitation.status == "new").count()
+    reviewing   = db.query(Solicitation).filter(_active, Solicitation.status == "reviewing").count()
+    bid_count   = db.query(Solicitation).filter(_active, Solicitation.status == "bid").count()
+    no_bid      = db.query(Solicitation).filter(_active, Solicitation.status == "no_bid").count()
+    generated   = db.query(Solicitation).filter(_active, Solicitation.status == "proposal_generated").count()
+    high_match  = db.query(Solicitation).filter(_active, Solicitation.scope_match_level == "High").count()
+    medium_match = db.query(Solicitation).filter(_active, Solicitation.scope_match_level == "Medium").count()
 
     return {
         "total":             total,
@@ -177,7 +183,7 @@ async def list_solicitations(
     List solicitations with optional filters.
     Does NOT include raw_rfp_text in list response (too large).
     """
-    query = db.query(Solicitation)
+    query = db.query(Solicitation).filter(Solicitation.is_deleted != True)
     if sol_status:
         query = query.filter(Solicitation.status == sol_status)
     if scope_level:
@@ -250,6 +256,130 @@ async def list_solicitations(
         sols = sols[skip: skip + limit]
 
     return {"total": total, "solicitations": [s.to_dict() for s in sols]}
+
+
+# ── Cost summary (must be before {solicitation_id} wildcard routes) ───────────
+
+@router.get("/solicitations/cost-summary")
+async def cost_summary(
+    db: Session = Depends(get_db),
+    _: str = Depends(verify_admin),
+):
+    """Full LLM cost analytics — today, all-time, per-day trend, per-solicitation detail."""
+    from datetime import datetime, timedelta
+    from sqlalchemy import func as _func, cast, Date
+
+    settings = get_settings()
+    now = datetime.utcnow()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    def _agg(query_filter):
+        return db.query(
+            _func.count(Solicitation.id),
+            _func.coalesce(_func.sum(Solicitation.tokens_input),    0),
+            _func.coalesce(_func.sum(Solicitation.tokens_output),   0),
+            _func.coalesce(_func.sum(Solicitation.estimated_cost_usd), 0.0),
+            _func.coalesce(_func.sum(Solicitation.pages_processed), 0),
+        ).filter(*query_filter).one()
+
+    base = [Solicitation.is_deleted != True]
+
+    tc, ti, to_, tco, tp = _agg(base + [Solicitation.created_at >= today_start])
+    ac, ai, ao, aco, ap  = _agg(base)
+
+    # Last 7 days — one row per day
+    week_start = today_start - timedelta(days=6)
+    daily_rows = (
+        db.query(
+            cast(Solicitation.created_at, Date).label("day"),
+            _func.count(Solicitation.id),
+            _func.coalesce(_func.sum(Solicitation.tokens_input),  0),
+            _func.coalesce(_func.sum(Solicitation.tokens_output), 0),
+            _func.coalesce(_func.sum(Solicitation.estimated_cost_usd), 0.0),
+            _func.coalesce(_func.sum(Solicitation.pages_processed), 0),
+        )
+        .filter(Solicitation.is_deleted != True, Solicitation.created_at >= week_start)
+        .group_by(cast(Solicitation.created_at, Date))
+        .order_by(cast(Solicitation.created_at, Date))
+        .all()
+    )
+
+    # All solicitations with cost data, newest first — for the detail table
+    detail_rows = (
+        db.query(Solicitation)
+        .filter(Solicitation.is_deleted != True, Solicitation.tokens_input > 0)
+        .order_by(Solicitation.created_at.desc())
+        .limit(100)
+        .all()
+    )
+
+    threshold = settings.DAILY_COST_ALERT_USD
+    return {
+        "today": {
+            "count": tc, "tokens_input": ti, "tokens_output": to_,
+            "cost_usd": round(float(tco), 6), "pages_processed": tp,
+        },
+        "all_time": {
+            "count": ac, "tokens_input": ai, "tokens_output": ao,
+            "cost_usd": round(float(aco), 6), "pages_processed": ap,
+        },
+        "threshold_usd":      threshold,
+        "threshold_exceeded": float(tco) >= threshold,
+        "daily_trend": [
+            {
+                "date":           str(r[0]),
+                "count":          r[1],
+                "tokens_input":   r[2],
+                "tokens_output":  r[3],
+                "cost_usd":       round(float(r[4]), 6),
+                "pages_processed": r[5],
+            }
+            for r in daily_rows
+        ],
+        "solicitations": [
+            {
+                "id":              s.id,
+                "capture_id":      s.capture_id or f"CAP-{s.id}",
+                "title":           (s.title or "")[:80],
+                "agency":          (s.agency or "")[:50],
+                "status":          s.status,
+                "scope_level":     s.scope_match_level or "",
+                "pages_processed": s.pages_processed or 0,
+                "tokens_input":    s.tokens_input or 0,
+                "tokens_output":   s.tokens_output or 0,
+                "cost_usd":        round(s.estimated_cost_usd or 0.0, 6),
+                "created_at":      s.created_at.isoformat() if s.created_at else None,
+            }
+            for s in detail_rows
+        ],
+    }
+
+
+# ── Bin (must be before {solicitation_id} wildcard routes) ────────────────────
+
+@router.get("/solicitations/bin")
+async def list_bin(
+    db: Session = Depends(get_db),
+    _: str = Depends(verify_admin),
+):
+    """List soft-deleted solicitations still within the 7-day retention window."""
+    from datetime import timedelta
+    cutoff = _dt.utcnow() - timedelta(days=7)
+    # Purge records older than 7 days first
+    expired = db.query(Solicitation).filter(
+        Solicitation.is_deleted == True,
+        Solicitation.deleted_at <= cutoff,
+    ).all()
+    for s in expired:
+        db.delete(s)
+    if expired:
+        db.commit()
+
+    sols = db.query(Solicitation).filter(
+        Solicitation.is_deleted == True,
+        Solicitation.deleted_at > cutoff,
+    ).order_by(Solicitation.deleted_at.desc()).all()
+    return {"solicitations": [s.to_dict() for s in sols], "total": len(sols)}
 
 
 # ── Detail ─────────────────────────────────────────────────────────────────────
@@ -405,6 +535,7 @@ async def generate_proposal_from_solicitation(
 @router.post("/solicitations/scan-now")
 async def scan_now(
     background_tasks: BackgroundTasks,
+    payload: ScanNowRequest = ScanNowRequest(),  # TEST MODE — REMOVE BEFORE DEPLOY
     _: str = Depends(verify_admin),
 ):
     """
@@ -412,7 +543,7 @@ async def scan_now(
     Runs in background — poll /scan-status for progress.
     """
     scan_id = _create_scan()
-    background_tasks.add_task(_run_full_capture_scan, scan_id)
+    background_tasks.add_task(_run_full_capture_scan, scan_id, payload.test_mode)  # TEST MODE — REMOVE BEFORE DEPLOY
     return {"message": "Capture scan started", "scan_id": scan_id}
 
 
@@ -433,7 +564,7 @@ async def scan_single_url(
     return {"message": f"Single URL scan started for: {payload.url}"}
 
 
-def _run_full_capture_scan(scan_id: str = ""):
+def _run_full_capture_scan(scan_id: str = "", test_mode: bool = False):  # TEST MODE param — REMOVE BEFORE DEPLOY
     """Background: scan all active procurement DiscoverySources."""
     from app.database import SessionLocal
     from app.models import DiscoverySource
@@ -481,7 +612,7 @@ def _run_full_capture_scan(scan_id: str = ""):
                 def _on_save(sol, _src=source.name):
                     msg(f"✓ Saved [{sol.capture_id}] {sol.title[:60]} ({sol.scope_match_level} {sol.scope_match_percentage:.0f}%)")
 
-                count = agent.scan_source(source, db, on_save=_on_save, is_cancelled=is_cancelled)
+                count = agent.scan_source(source, db, on_save=_on_save, is_cancelled=is_cancelled, test_mode=test_mode)  # TEST MODE — REMOVE BEFORE DEPLOY
                 total_created += count
                 source.last_scanned_at = _dt.utcnow()
                 db.commit()
@@ -612,7 +743,7 @@ async def download_attachment(
     )
 
 
-# ── Delete ─────────────────────────────────────────────────────────────────────
+# ── Soft Delete / Bin ──────────────────────────────────────────────────────────
 
 @router.delete("/solicitations/{solicitation_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_solicitation(
@@ -620,14 +751,33 @@ async def delete_solicitation(
     db: Session = Depends(get_db),
     _: str = Depends(verify_admin),
 ):
-    """Delete a solicitation record (does not delete the linked Proposal)."""
+    """Soft-delete: moves to bin. Auto-purged after 7 days."""
     sol = db.query(Solicitation).filter(Solicitation.id == solicitation_id).first()
     if not sol:
         raise HTTPException(status_code=404, detail="Solicitation not found")
     try:
-        db.delete(sol)
+        sol.is_deleted = True
+        sol.deleted_at = _dt.utcnow()
         db.commit()
         return None
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/solicitations/{solicitation_id}/restore")
+async def restore_solicitation(
+    solicitation_id: int,
+    db: Session = Depends(get_db),
+    _: str = Depends(verify_admin),
+):
+    """Restore a soft-deleted solicitation from the bin."""
+    sol = db.query(Solicitation).filter(Solicitation.id == solicitation_id).first()
+    if not sol:
+        raise HTTPException(status_code=404, detail="Solicitation not found")
+    sol.is_deleted = False
+    sol.deleted_at = None
+    db.commit()
+    return {"message": "Restored"}
+
+

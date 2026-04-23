@@ -18,49 +18,154 @@ from urllib.parse import urljoin
 logger = logging.getLogger(__name__)
 
 
-# ── PDF helpers (ported from Scrapling/pdf_extractor.py) ──────────────────────
+# ── PDF helpers ────────────────────────────────────────────────────────────────
+
+# Page threshold: PDFs at or below this size are extracted in full.
+# Larger PDFs use smart section extraction to avoid flooding the LLM.
+_FULL_EXTRACT_PAGE_LIMIT = 50
+
+# UCF / government contract section headers to look for (line-start, case-insensitive).
+# Includes common UCF section names, plain-English equivalents, and key qualification areas.
+_SECTION_PATTERNS = re.compile(
+    r'^\s*('
+    r'SECTION\s+[BCJLM]\b'           # UCF: C=SOW, J=attachments, L=instructions, M=evaluation
+    r'|STATEMENT\s+OF\s+WORK'
+    r'|SCOPE\s+OF\s+WORK'
+    r'|SOW\b'
+    r'|PERFORMANCE\s+WORK\s+STATEMENT'
+    r'|PWS\b'
+    r'|PAST\s+PERFORMANCE'
+    r'|REFERENCES'
+    r'|QUALIFICATIONS?'
+    r'|INSURANCE'
+    r'|CERTIFICATIONS?'
+    r'|LICENSES?\s+AND\s+REGISTRATIONS?'
+    r'|EVALUATION\s+(CRITERIA|FACTORS?)'
+    r'|INSTRUCTIONS\s+TO\s+(OFFERORS?|BIDDERS?)'
+    r'|PERIOD\s+OF\s+PERFORMANCE'
+    r')',
+    re.IGNORECASE | re.MULTILINE,
+)
+
+# Window of pages to keep around each matched section header page
+_SECTION_PAGE_WINDOW = 3
+
+# First/last pages always kept as fallback anchors for large PDFs
+_FALLBACK_FIRST_PAGES = 15
+_FALLBACK_LAST_PAGES  = 3
+
 
 def _find_pdf_links(markdown: str) -> List[Tuple[str, str]]:
-    """Return list of (display_name, url) for every PDF link in Markdown."""
-    pattern = r'\[([^\]]+\.pdf[^\]]*)\]\(([^)]+)\)'
+    """Return list of (display_name, url) for every PDF or Word doc link in Markdown."""
+    pattern = r'\[([^\]]+\.(?:pdf|docx?)[^\]]*)\]\(([^)]+)\)'
     return re.findall(pattern, markdown, re.IGNORECASE)
 
 
-def _bytes_to_text(pdf_bytes: bytes) -> str:
-    """Extract text from PDF bytes using pdfplumber, falling back to PyMuPDF."""
-    text = _extract_pdfplumber(pdf_bytes)
-    if not text.strip():
-        text = _extract_pymupdf(pdf_bytes)
-    return text.strip()
-
-
-def _extract_pdfplumber(pdf_bytes: bytes) -> str:
+def _raw_pages_pdfplumber(pdf_bytes: bytes) -> List[str]:
+    """Extract per-page text list using pdfplumber. Returns [] on failure."""
     pages = []
     try:
         import pdfplumber
         with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
-            for i, page in enumerate(pdf.pages, 1):
-                t = page.extract_text() or ""
-                if t.strip():
-                    pages.append(f"--- Page {i} ---\n{t}")
+            for page in pdf.pages:
+                pages.append(page.extract_text() or "")
     except Exception:
         pass
-    return "\n\n".join(pages)
+    return pages
 
 
-def _extract_pymupdf(pdf_bytes: bytes) -> str:
+def _raw_pages_pymupdf(pdf_bytes: bytes) -> List[str]:
+    """Extract per-page text list using PyMuPDF. Returns [] on failure."""
     pages = []
     try:
         import fitz
         doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-        for i, page in enumerate(doc, 1):
-            t = page.get_text()
-            if t.strip():
-                pages.append(f"--- Page {i} ---\n{t}")
+        for page in doc:
+            pages.append(page.get_text())
         doc.close()
     except Exception:
         pass
-    return "\n\n".join(pages)
+    return pages
+
+
+def _select_pages(pages: List[str]) -> Tuple[List[int], str]:
+    """
+    For a large PDF (> _FULL_EXTRACT_PAGE_LIMIT pages), select only the
+    relevant subset of page indices.
+
+    Strategy:
+      1. Always include first _FALLBACK_FIRST_PAGES and last _FALLBACK_LAST_PAGES
+      2. Include any page (± _SECTION_PAGE_WINDOW) that contains a section header match
+      3. Union all of the above, deduplicate, keep sorted
+
+    Returns (selected_indices_0based, reason_string_for_logging).
+    """
+    total = len(pages)
+    selected: set = set()
+
+    # Anchor pages
+    for i in range(min(_FALLBACK_FIRST_PAGES, total)):
+        selected.add(i)
+    for i in range(max(0, total - _FALLBACK_LAST_PAGES), total):
+        selected.add(i)
+
+    # Section header pages
+    section_hits = []
+    for i, text in enumerate(pages):
+        if _SECTION_PATTERNS.search(text):
+            section_hits.append(i)
+            for j in range(
+                max(0, i - _SECTION_PAGE_WINDOW),
+                min(total, i + _SECTION_PAGE_WINDOW + 1),
+            ):
+                selected.add(j)
+
+    reason = (
+        f"first {min(_FALLBACK_FIRST_PAGES, total)} + last {min(_FALLBACK_LAST_PAGES, total)} pages"
+        f" + {len(section_hits)} section-header match(es) "
+        f"→ {len(selected)}/{total} pages sent to LLM"
+    )
+    return sorted(selected), reason
+
+
+def _bytes_to_text(pdf_bytes: bytes) -> str:
+    """
+    Extract text from PDF bytes.
+
+    ≤ 50 pages  →  full extraction (current behaviour, zero risk).
+    > 50 pages  →  smart section extraction: anchor pages + UCF section windows.
+    Falls back from pdfplumber → PyMuPDF automatically.
+    """
+    # Get per-page text from the best available library
+    pages = _raw_pages_pdfplumber(pdf_bytes)
+    if not any(p.strip() for p in pages):
+        pages = _raw_pages_pymupdf(pdf_bytes)
+
+    if not pages:
+        return ""
+
+    total = len(pages)
+
+    if total <= _FULL_EXTRACT_PAGE_LIMIT:
+        # Full extraction — unchanged behaviour
+        parts = [
+            f"--- Page {i+1} ---\n{t}"
+            for i, t in enumerate(pages)
+            if t.strip()
+        ]
+        logger.debug(f"[PDF] {total} pages — full extraction")
+        return "\n\n".join(parts).strip()
+
+    # Large PDF — smart selection
+    selected_indices, reason = _select_pages(pages)
+    logger.info(f"[PDF] {total}-page PDF: {reason}")
+
+    parts = [
+        f"--- Page {i+1} ---\n{pages[i]}"
+        for i in selected_indices
+        if pages[i].strip()
+    ]
+    return "\n\n".join(parts).strip()
 
 
 # ── Main crawler class ─────────────────────────────────────────────────────────
@@ -487,80 +592,129 @@ class StealthCrawler:
             logger.warning(f"[StealthCrawler] ✗ HigherGov search interaction failed: {e} — proceeding without filter")
             return original_url
 
+    async def _inject_search_filters(self, pw_page) -> None:
+        """
+        Intercept every HigherGov DataTables POST and inject
+          active_opp = true
+          date2.min  = today (YYYY-MM-DD)
+        into search_params before the request reaches HigherGov's server.
+
+        Why this instead of UI interaction:
+        HigherGov is a Vue.js SPA — setting element.value via JS does NOT trigger
+        Vue's reactive state, so the filter never actually applies.  Intercepting
+        at the network layer modifies the actual POST body, so the server always
+        sees our filters regardless of what the Vue component state shows in the DOM.
+        This also covers every pagination page automatically.
+        """
+        from urllib.parse import parse_qs, urlencode
+        import json as _json
+
+        async def _inject(route):
+            body = route.request.post_data or ""
+            logger.info(f"[StealthCrawler] [Route] DataTables intercepted: {route.request.url[-70:]}")
+            try:
+                params = parse_qs(body, keep_blank_values=True)
+                if "search_params" not in params:
+                    logger.info(f"[StealthCrawler] [Route] search_params not in body keys: {list(params.keys())[:5]}")
+                    await route.continue_()
+                    return
+
+                sp = _json.loads(params["search_params"][0])
+                orig_active = sp.get("active_opp")
+
+                sp["active_opp"] = True
+
+                params["search_params"] = [_json.dumps(sp)]
+                new_body = urlencode(params, doseq=True)
+
+                logger.info(
+                    f"[StealthCrawler] ✓ Injected active_opp=True into DataTables request — "
+                    f"was: {orig_active!r}"
+                )
+                await route.continue_(post_data=new_body)
+
+            except Exception as exc:
+                logger.debug(f"[StealthCrawler] Filter injection parse error: {exc}")
+                await route.continue_()
+
+        await pw_page.route(
+            lambda url: "datatable_opportunity_search" in url,
+            _inject,
+        )
+        logger.info("[StealthCrawler] ✓ DataTables filter intercept registered (active_opp=True)")
+
     async def _apply_active_filter(self, pw_page) -> bool:
         """
-        Best-effort: activate HigherGov's 'Active' bid status filter so only
-        open solicitations (deadline not yet passed) appear in results.
-
-        Uses JavaScript to interact with the Vue.js filter state directly,
-        which is more reliable than clicking hidden DOM elements.
-        Returns True if applied, False if not (safe — caller continues either way).
-        The existing _is_deadline_future() gate in CaptureService is the hard safety net.
+        Apply Active Opportunities filter the same way keyword search works:
+        Playwright native click() triggers Vue events → HigherGov server generates
+        a new searchID with active_opp=true baked in → URL changes.
         """
         try:
-            # Ask the page what filter-related Vue data it has
-            filter_info = await pw_page.evaluate("""() => {
-                // Look for Vue instances that hold filter state
-                const inputs = [...document.querySelectorAll('input, select')].map(el => ({
-                    id: el.id, name: el.name, type: el.type,
-                    placeholder: el.placeholder, value: el.value
-                }));
-                // Look for any visible filter buttons or chips mentioning 'Active'
-                const activeEls = [...document.querySelectorAll('*')]
-                    .filter(el => el.children.length === 0
-                        && el.innerText
-                        && el.innerText.trim() === 'Active'
-                        && el.offsetParent !== null)
-                    .map(el => ({ tag: el.tagName, class: el.className, id: el.id }));
-                return { activeEls };
+            # ── Probe: log exactly what elements exist for active_opp ────────────
+            probe = await pw_page.evaluate("""() => {
+                return [...document.querySelectorAll('input, label, button, li, a, span, div')]
+                    .filter(el => {
+                        const v = (el.value || el.getAttribute('data-value') || '').toLowerCase();
+                        const t = (el.innerText || el.textContent || '').trim().toLowerCase();
+                        return v === 'active_opp' || t === 'active_opp'
+                            || t === 'active' || t === 'active opportunities';
+                    })
+                    .slice(0, 8)
+                    .map(el => ({
+                        tag:     el.tagName,
+                        id:      el.id,
+                        cls:     el.className.slice(0, 50),
+                        value:   el.value || '',
+                        type:    el.type  || '',
+                        checked: el.checked || false,
+                        visible: !!el.offsetParent,
+                        text:    (el.innerText || '').trim().slice(0, 40)
+                    }));
             }""")
-            logger.info(f"[StealthCrawler] Active filter search — visible 'Active' elements: {filter_info.get('activeEls', [])}")
+            logger.info(f"[StealthCrawler] [Active probe] Elements: {probe}")
 
-            # Strategy 1: click a visible element with text "Active" in a filter context
-            active_locators = [
-                pw_page.get_by_role("option", name="Active"),
-                pw_page.get_by_role("checkbox", name=re.compile("active", re.I)),
-                pw_page.locator('.badge:has-text("Active")'),
-                pw_page.locator('[class*="filter"]:has-text("Active")'),
-                pw_page.locator('label:has-text("Active")'),
-            ]
-            for loc in active_locators:
-                try:
-                    if await loc.count() > 0 and await loc.first.is_visible():
-                        await loc.first.click()
-                        await pw_page.wait_for_load_state("networkidle")
-                        logger.info("[StealthCrawler] ✓ Active bid status filter applied via element click")
-                        return True
-                except Exception:
-                    continue
-
-            # Strategy 2: set the response-deadline date filter via JavaScript
-            # HigherGov uses 'date2.relative_after' for "deadline N+ days from now"
-            # Setting it to 0 means "deadline today or later" = active solicitations
-            result = await pw_page.evaluate("""() => {
-                const el = document.getElementById('date2.relative_after');
-                if (el) {
-                    el.value = '0';
-                    el.dispatchEvent(new Event('input', { bubbles: true }));
-                    el.dispatchEvent(new Event('change', { bubbles: true }));
-                    return true;
-                }
-                return false;
-            }""")
-            if result:
-                await pw_page.wait_for_timeout(1500)
-                await pw_page.wait_for_load_state("networkidle")
-                logger.info("[StealthCrawler] ✓ Response deadline filter set to today+ via JavaScript")
+            # ── Strategy 1: checkbox input[value="active_opp"] ───────────────────
+            chk = pw_page.locator('input[value="active_opp"]')
+            if await chk.count() > 0:
+                is_checked = await chk.first.is_checked()
+                logger.info(f"[StealthCrawler] input[value='active_opp'] found, checked={is_checked}")
+                if not is_checked:
+                    await chk.first.click()
+                    await pw_page.wait_for_load_state("networkidle")
+                    logger.info(f"[StealthCrawler] ✓ Active filter clicked — URL: {pw_page.url[-60:]}")
+                else:
+                    logger.info("[StealthCrawler] ✓ Active filter already checked")
                 return True
 
-            logger.info(
-                "[StealthCrawler] Active filter not applied — no matching filter element found. "
-                "Expired solicitations will be caught by the deadline gate in CaptureService."
+            # ── Strategy 2: "Add Filters" button → Active option in dropdown ─────
+            add_btn = pw_page.locator('button:has-text("Add Filters")')
+            if await add_btn.count() > 0:
+                await add_btn.first.click()
+                await pw_page.wait_for_timeout(600)
+                for sel in [':text-is("Active Opportunities")', ':text-is("Active")',
+                            '[class*="item"]:has-text("Active")', '[class*="option"]:has-text("Active")']:
+                    opt = pw_page.locator(sel)
+                    try:
+                        if await opt.count() > 0 and await opt.first.is_visible():
+                            await opt.first.click()
+                            await pw_page.wait_for_load_state("networkidle")
+                            logger.info(
+                                f"[StealthCrawler] ✓ Active filter via Add Filters dropdown ('{sel}') "
+                                f"— URL: {pw_page.url[-60:]}"
+                            )
+                            return True
+                    except Exception:
+                        continue
+                await pw_page.keyboard.press("Escape")
+
+            logger.warning(
+                "[StealthCrawler] ✗ Active filter: no element matched. "
+                "Share the [Active probe] log above to identify the correct selector."
             )
             return False
 
         except Exception as e:
-            logger.debug(f"[StealthCrawler] Active filter attempt failed: {e} — continuing without it")
+            logger.warning(f"[StealthCrawler] Active filter error: {e}")
             return False
 
     async def _collect_all_links_paginated(self, listing_url: str, search_keyword: str = "") -> List[str]:
@@ -577,6 +731,11 @@ class StealthCrawler:
 
         pw_page = await session.context.new_page()
         try:
+            # Register DataTables filter intercept BEFORE any navigation so it applies
+            # to the very first API call HigherGov makes when the page loads.
+            if "highergov.com" in listing_url:
+                await self._inject_search_filters(pw_page)
+
             captured_api: Dict[str, Any] = {"requests": []}
 
             async def on_request(req):
@@ -602,9 +761,8 @@ class StealthCrawler:
             if search_keyword and "highergov.com" in listing_url:
                 await self._dismiss_modal_static(pw_page)
                 listing_url = await self._highergov_search(pw_page, search_keyword)
-                # Best-effort: apply Active/Open status filter to exclude expired solicitations.
-                # Falls through safely if not found — CaptureService._is_deadline_future() is the hard gate.
                 await self._apply_active_filter(pw_page)
+                listing_url = pw_page.url  # URL changes when Active filter generates new searchID
                 logger.info(f"[StealthCrawler] Collecting links from filtered URL: {listing_url}")
 
             # Detect total page count from visible pagination buttons
@@ -740,7 +898,8 @@ class StealthCrawler:
                         if await btn.count() > 0 and await btn.is_visible():
                             await btn.click()
                             await pw_page.wait_for_load_state("networkidle")
-                            await pw_page.wait_for_timeout(500)
+                            import random as _r
+                            await pw_page.wait_for_timeout(int(_r.uniform(1500, 3000)))
                             html = await pw_page.content()
                             new_links = _hrefs_from_html(html)
                             all_links.extend(new_links)
@@ -992,7 +1151,14 @@ class StealthCrawler:
         sub_results = []
         pending_llm: list = []
 
+        import random as _random
         for i, url in enumerate(filtered):
+            # Human-like delay between pages (skip before the very first request)
+            if i > 0:
+                delay = _random.uniform(1.0, 3.0)
+                logger.info(f"[StealthCrawler] Waiting {delay:.1f}s before next page (human-like pace)...")
+                await asyncio.sleep(delay)
+
             logger.info(f"[StealthCrawler] Scraping {i+1}/{len(filtered)}: {url}")
             try:
                 result = await asyncio.wait_for(self._scrape_single(url), timeout=120)

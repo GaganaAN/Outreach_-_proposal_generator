@@ -57,12 +57,43 @@ async def global_exception_handler(_request: Request, exc: Exception):
     )
 
 
+def _run_migrations():
+    """Add new columns to existing tables without Alembic."""
+    from sqlalchemy import text, inspect
+    from app.database import engine
+    dialect = engine.dialect.name
+    schema = "mailposalix" if dialect == "postgresql" else None
+    is_pg = dialect == "postgresql"
+    tbl = "mailposalix.solicitations" if is_pg else "solicitations"
+    inspector = inspect(engine)
+    existing = {c["name"] for c in inspector.get_columns("solicitations", schema=schema)}
+    new_cols = {
+        "agency_source_url":      "VARCHAR(1000)",
+        "restricted_attachments": "TEXT",
+        "is_deleted":             "BOOLEAN DEFAULT FALSE" if is_pg else "BOOLEAN DEFAULT 0",
+        "deleted_at":             "TIMESTAMP",
+        "tokens_input":           "INTEGER",
+        "tokens_output":          "INTEGER",
+        "estimated_cost_usd":     "FLOAT",
+        "pages_processed":        "INTEGER",
+    }
+    for col, col_type in new_cols.items():
+        if col not in existing:
+            try:
+                with engine.begin() as conn:
+                    conn.execute(text(f"ALTER TABLE {tbl} ADD COLUMN {col} {col_type}"))
+                logger.info(f"✓ Migration: added column solicitations.{col}")
+            except Exception as e:
+                logger.warning(f"DB migration warning for column {col} (non-fatal): {e}")
+
+
 @app.on_event("startup")
 async def startup_event():
     logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
     try:
         init_db()
         logger.info("✓ Database initialized (all tables created)")
+        _run_migrations()
 
         from app.core.llm_client import get_llm_client
         from app.core.vector_store import get_vector_store

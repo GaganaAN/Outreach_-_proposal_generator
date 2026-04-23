@@ -345,6 +345,8 @@ class Solicitation(Base):
     raw_rfp_text              = Column(Text, nullable=True)           # full extracted text
     pdf_filenames             = Column(Text, nullable=True)           # JSON list of extracted PDF names
     attachment_urls           = Column(Text, nullable=True)           # JSON {name: url} for each attachment
+    restricted_attachments    = Column(Text, nullable=True)           # JSON list of URLs blocked by agency
+    agency_source_url         = Column(String(1000), nullable=True)   # SAM.gov / agency original posting URL
 
     # ── Bid / no-bid workflow ──────────────────────────────────────────────────
     status                    = Column(String(30), default="new", index=True)
@@ -353,6 +355,16 @@ class Solicitation(Base):
 
     # ── Link to generated proposal (set after bid + generation) ───────────────
     proposal_id               = Column(Integer, ForeignKey("mailposalix.proposals.id"), nullable=True)
+
+    # ── LLM token usage & cost tracking ───────────────────────────────────────
+    tokens_input              = Column(Integer, nullable=True)
+    tokens_output             = Column(Integer, nullable=True)
+    estimated_cost_usd        = Column(Float,   nullable=True)
+    pages_processed           = Column(Integer, nullable=True)   # pages sent to LLM
+
+    # ── Soft delete ────────────────────────────────────────────────────────────
+    is_deleted                = Column(Boolean, default=False, server_default='0')
+    deleted_at                = Column(DateTime(timezone=True), nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
@@ -396,6 +408,14 @@ class Solicitation(Base):
             # raw content (omit rfp_text from list views — too large)
             "pdf_filenames":             _parse(self.pdf_filenames) or [],
             "attachment_urls":           _parse(self.attachment_urls) or {},
+            "restricted_attachments":    _parse(self.restricted_attachments) or [],
+            "agency_source_url":         self.agency_source_url or "",
+            "tokens_input":              self.tokens_input or 0,
+            "tokens_output":             self.tokens_output or 0,
+            "estimated_cost_usd":        round(self.estimated_cost_usd or 0.0, 6),
+            "pages_processed":           self.pages_processed or 0,
+            "is_deleted":                self.is_deleted or False,
+            "deleted_at":                self.deleted_at.isoformat() if self.deleted_at else None,
             # PRD Section 7 — deep links to exact source location using browser Text Fragments API.
             # Format: {solicitation_url}#:~:text={url-encoded verbatim quote}
             # Chrome/Edge/Safari will scroll to and highlight that exact paragraph when opened.

@@ -113,7 +113,7 @@ class LeadDiscoveryAgent:
 
         logger.info(f"[Search] Global search created {signals_created} new signal(s)")
 
-    def scan_source(self, source, db, on_save=None, is_cancelled=None) -> int:
+    def scan_source(self, source, db, on_save=None, is_cancelled=None, test_mode: bool = False) -> int:  # TEST MODE param — REMOVE BEFORE DEPLOY
         """
         Route a single source to the correct pipeline based on source_type.
 
@@ -124,11 +124,11 @@ class LeadDiscoveryAgent:
             Number of new records created (Solicitation or Signal)
         """
         if source.source_type == "procurement":
-            return self._scan_procurement(source, db, on_save=on_save, is_cancelled=is_cancelled)
+            return self._scan_procurement(source, db, on_save=on_save, is_cancelled=is_cancelled, test_mode=test_mode)  # TEST MODE — REMOVE BEFORE DEPLOY
         else:
             return self._scan_basic(source, db)
 
-    def _scan_procurement(self, source, db, on_save=None, is_cancelled=None) -> int:
+    def _scan_procurement(self, source, db, on_save=None, is_cancelled=None, test_mode: bool = False) -> int:  # TEST MODE param — REMOVE BEFORE DEPLOY
         """
         Procurement source: full Scrapling-based capture pipeline.
         Delegates entirely to CaptureService — creates Solicitation records.
@@ -136,7 +136,7 @@ class LeadDiscoveryAgent:
         logger.info(f"[Discovery] Procurement scan: {source.name} ({source.url})")
         try:
             from app.services.capture_service import get_capture_service
-            return get_capture_service().scan_source(source, db, on_save=on_save, is_cancelled=is_cancelled)
+            return get_capture_service().scan_source(source, db, on_save=on_save, is_cancelled=is_cancelled, test_mode=test_mode)  # TEST MODE — REMOVE BEFORE DEPLOY
         except Exception as e:
             logger.error(f"[Discovery] Procurement scan failed for {source.name}: {e}")
             return 0

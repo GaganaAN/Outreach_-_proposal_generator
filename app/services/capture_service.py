@@ -29,7 +29,7 @@ class CaptureService:
 
     # ── Public: scan a procurement DiscoverySource ─────────────────────────────
 
-    def scan_source(self, source, db, on_save=None, is_cancelled=None) -> int:
+    def scan_source(self, source, db, on_save=None, is_cancelled=None, test_mode: bool = False) -> int:  # TEST MODE param — REMOVE BEFORE DEPLOY
         """
         Scan a DiscoverySource of type 'procurement' using StealthCrawler.
 
@@ -38,6 +38,7 @@ class CaptureService:
             db:           Active SQLAlchemy session
             on_save:      Optional callable(sol) called after each solicitation is saved
             is_cancelled: Optional callable() → bool; checked between each sub-result
+            test_mode:    Skip URL deduplication so everything is re-scraped fresh  # TEST MODE — REMOVE BEFORE DEPLOY
 
         Returns:
             Number of new Solicitation records created
@@ -84,10 +85,15 @@ class CaptureService:
         try:
             from app.services.stealth_crawler import get_stealth_crawler, run_async
             from app.models import Solicitation as _Sol
-            existing_urls: set = set(
-                row[0] for row in db.query(_Sol.solicitation_url).all() if row[0]
-            )
-            logger.info(f"[Capture] Pre-filter set: {len(existing_urls)} known URL(s) — skipping these before scraping")
+            # TEST MODE — REMOVE BEFORE DEPLOY: bypass dedup so everything is re-scraped
+            if test_mode:
+                existing_urls: set = set()
+                logger.info("[Capture] TEST MODE: deduplication bypassed — all URLs will be scraped fresh")
+            else:
+                existing_urls = set(
+                    row[0] for row in db.query(_Sol.solicitation_url).all() if row[0]
+                )
+                logger.info(f"[Capture] Pre-filter set: {len(existing_urls)} known URL(s) — skipping these before scraping")
             crawler = get_stealth_crawler()
             run_async(
                 crawler.crawl_listing(
@@ -167,10 +173,21 @@ class CaptureService:
             matched_keyword = keywords[0]
             logger.debug(f"[Capture] No keyword found in content — using fallback '{matched_keyword}'")
 
+        # Count pages being sent to LLM (from --- Page N --- markers inserted during PDF extraction)
+        import re as _re
+        pages_processed = len(_re.findall(r'--- Page \d+ ---', full_text))
+
+        # Pre-extract keyword paragraph in Python — more reliable than asking the LLM to find it
+        keyword_paragraph = self._find_keyword_paragraph(full_text, matched_keyword)
+
         # Run LLM extraction
-        extraction = self._extract_qualification(full_text, matched_keyword, solicitation_url)
+        extraction, tok_in, tok_out = self._extract_qualification(full_text, matched_keyword, solicitation_url)
         if not extraction:
             return None
+
+        # Inject our Python-extracted paragraph if LLM returned nothing
+        if not extraction.get("keyword_matched_paragraph") and keyword_paragraph:
+            extraction["keyword_matched_paragraph"] = keyword_paragraph
 
         # Date gate: skip RFPs whose deadline has already passed
         if not self._is_deadline_future(extraction.get("response_deadline")):
@@ -209,6 +226,23 @@ class CaptureService:
             )
             return None
 
+        # Build restricted attachment list (PDFs that returned errors during download)
+        restricted = [
+            entry.get("url", "")
+            for entry in pdf_contents.values()
+            if isinstance(entry, dict)
+            and str(entry.get("text", "")).startswith("[ERROR]")
+            and entry.get("url")
+        ]
+
+        # Extract agency source URL (SAM.gov / grants.gov original posting)
+        agency_source_url = self._extract_agency_source_url(markdown)
+
+        # Compute cost from token usage
+        from app.core.llm_client import compute_llm_cost
+        provider = self.settings.CAPTURE_LLM_PROVIDER
+        cost_usd = compute_llm_cost(provider, tok_in, tok_out)
+
         # Save Solicitation
         sol = self._save_solicitation(
             extraction=extraction,
@@ -217,7 +251,13 @@ class CaptureService:
             raw_rfp_text=full_text,
             pdf_filenames=list(pdf_contents.keys()),
             attachment_urls=self._extract_attachment_urls(pdf_contents),
+            restricted_attachments=restricted,
+            agency_source_url=agency_source_url,
             keyword_matched=matched_keyword,
+            tokens_input=tok_in,
+            tokens_output=tok_out,
+            estimated_cost_usd=cost_usd,
+            pages_processed=pages_processed,
             db=db,
         )
 
@@ -237,8 +277,11 @@ class CaptureService:
         full_text: str,
         keyword: str,
         solicitation_url: str,
-    ) -> Optional[Dict]:
-        """Run CAPTURE_QUALIFICATION_PROMPT against full_text via LLM."""
+    ):
+        """
+        Run CAPTURE_QUALIFICATION_PROMPT against full_text via LLM.
+        Returns (Optional[Dict], tokens_in: int, tokens_out: int).
+        """
         from app.core.prompts import CAPTURE_QUALIFICATION_PROMPT
         from app.core.llm_client import get_llm_client
         from app.core.kb_loader import get_company_kb
@@ -254,23 +297,24 @@ class CaptureService:
         llm = get_llm_client()
 
         try:
-            result = llm.generate_json(prompt, provider=provider)
+            result, tok_in, tok_out = llm.generate_json_with_usage(prompt, provider=provider)
             logger.info(
                 f"[Capture] Qualification extracted: "
                 f"title='{result.get('title', '')[:60]}' "
-                f"scope={result.get('scope_match', {}).get('percentage', '?')}%"
+                f"scope={result.get('scope_match', {}).get('percentage', '?')}% "
+                f"| tokens in={tok_in} out={tok_out}"
             )
-            return result
+            return result, tok_in, tok_out
         except Exception as e:
             logger.error(f"[Capture] LLM qualification failed: {e}")
-            # Fallback: try with a different provider
+            # Fallback: try with a different provider, accumulate tokens
             if provider != "groq":
                 try:
-                    result = llm.generate_json(prompt, provider="groq")
-                    return result
+                    result, tok_in, tok_out = llm.generate_json_with_usage(prompt, provider="groq")
+                    return result, tok_in, tok_out
                 except Exception as e2:
                     logger.error(f"[Capture] Fallback LLM also failed: {e2}")
-            return None
+            return None, 0, 0
 
     # ── DB persistence ─────────────────────────────────────────────────────────
 
@@ -284,6 +328,12 @@ class CaptureService:
         attachment_urls: Dict[str, str],
         keyword_matched: str,
         db,
+        restricted_attachments: List[str] = None,
+        agency_source_url: str = None,
+        tokens_input: int = 0,
+        tokens_output: int = 0,
+        estimated_cost_usd: float = 0.0,
+        pages_processed: int = 0,
     ):
         """Build and persist a Solicitation record from extracted data."""
         from app.models import Solicitation
@@ -327,6 +377,12 @@ class CaptureService:
             raw_rfp_text=raw_rfp_text,
             pdf_filenames=json.dumps(pdf_filenames),
             attachment_urls=json.dumps(attachment_urls) if attachment_urls else None,
+            restricted_attachments=json.dumps(restricted_attachments) if restricted_attachments else None,
+            agency_source_url=agency_source_url or None,
+            tokens_input=tokens_input or 0,
+            tokens_output=tokens_output or 0,
+            estimated_cost_usd=estimated_cost_usd or 0.0,
+            pages_processed=pages_processed or 0,
             status="new",
         )
 
@@ -342,8 +398,27 @@ class CaptureService:
         db.refresh(sol)
         logger.info(
             f"[Capture] Saved solicitation id={sol.id} capture_id={sol.capture_id}: "
-            f"'{sol.title[:60]}' | {scope_level} match ({scope_pct}%)"
+            f"'{sol.title[:60]}' | {scope_level} match ({scope_pct}%) "
+            f"| cost=${estimated_cost_usd:.6f} (in={tokens_input} out={tokens_output})"
         )
+
+        # Check daily cost threshold and log a warning if exceeded
+        try:
+            from datetime import date
+            from app.models import Solicitation as _Sol
+            today_start = _dt.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+            daily_cost = db.query(
+                __import__('sqlalchemy').func.sum(_Sol.estimated_cost_usd)
+            ).filter(_Sol.created_at >= today_start).scalar() or 0.0
+            threshold = self.settings.DAILY_COST_ALERT_USD
+            if daily_cost >= threshold:
+                logger.warning(
+                    f"[Capture] ⚠ Daily LLM cost ${daily_cost:.4f} has exceeded "
+                    f"threshold ${threshold:.2f}"
+                )
+        except Exception:
+            pass
+
         return sol
 
     # ── Notification ───────────────────────────────────────────────────────────
@@ -448,12 +523,54 @@ class CaptureService:
                     pass
         return True  # Could not parse — include by default
 
+    def _find_keyword_paragraph(self, text: str, keyword: str) -> str:
+        """
+        Find and return the paragraph (or surrounding sentences) that contains
+        the keyword. Returns up to 1500 chars so it fits comfortably in the UI.
+        Falls back to the first sentence containing the keyword if no paragraph break found.
+        """
+        if not keyword or not text:
+            return ""
+        import re as _re
+        kw_lower = keyword.lower()
+
+        # Split on blank lines — each chunk is a paragraph
+        paragraphs = _re.split(r'\n\s*\n', text)
+        for para in paragraphs:
+            if kw_lower in para.lower():
+                return para.strip()[:1500]
+
+        # Fallback: sentence-level search
+        sentences = _re.split(r'(?<=[.!?])\s+', text)
+        matched = [s.strip() for s in sentences if kw_lower in s.lower()]
+        if matched:
+            # Return up to 3 consecutive matching sentences for context
+            return " ".join(matched[:3])[:1500]
+
+        return ""
+
     def _find_matched_keyword(self, text: str, keywords: List[str]) -> str:
         text_lower = text.lower()
         for kw in keywords:
             if kw.lower() in text_lower:
                 return kw
         return keywords[0] if keywords else ""
+
+    def _extract_agency_source_url(self, markdown: str) -> Optional[str]:
+        """Extract the original agency/SAM.gov posting URL from scraped markdown."""
+        import re
+        patterns = [
+            r'https?://sam\.gov/[^\s\)\]"\'<>]+',
+            r'https?://beta\.sam\.gov/[^\s\)\]"\'<>]+',
+            r'https?://www\.grants\.gov/[^\s\)\]"\'<>]+',
+            r'https?://dibbs\.dla\.mil/[^\s\)\]"\'<>]+',
+            r'https?://[^\s\)\]"\'<>]*\.gov/[^\s\)\]"\'<>]*(?:opp|solicitation|rfp|award)[^\s\)\]"\'<>]*',
+        ]
+        for pat in patterns:
+            m = re.search(pat, markdown, re.IGNORECASE)
+            if m:
+                return m.group(0).rstrip(".,;)")
+        return None
 
     def _is_duplicate(self, solicitation_url: str, db) -> bool:
         """

@@ -92,6 +92,9 @@ class Settings(BaseSettings):
     # Max concurrent sub-page scrapes during a capture scan
     CAPTURE_MAX_CONCURRENT: int = 5
 
+    # Daily LLM cost threshold — log warning + UI alert when exceeded
+    DAILY_COST_ALERT_USD: float = 5.0
+
     class Config:
         env_file = ".env"
         case_sensitive = True
