@@ -362,6 +362,15 @@ class Solicitation(Base):
     estimated_cost_usd        = Column(Float,   nullable=True)
     pages_processed           = Column(Integer, nullable=True)   # pages sent to LLM
 
+    # ── AI-generated brief summary (populated by LLM extraction) ──────────────
+    executive_summary         = Column(Text, nullable=True)
+
+    # ── Archive (manual, with reason — distinct from soft-delete/bin) ──────────
+    is_archived               = Column(Boolean, default=False, server_default='0')
+    archived_reason           = Column(Text, nullable=True)
+    archived_by               = Column(String(200), nullable=True)
+    archived_at               = Column(DateTime(timezone=True), nullable=True)
+
     # ── Soft delete ────────────────────────────────────────────────────────────
     is_deleted                = Column(Boolean, default=False, server_default='0')
     deleted_at                = Column(DateTime(timezone=True), nullable=True)
@@ -414,6 +423,11 @@ class Solicitation(Base):
             "tokens_output":             self.tokens_output or 0,
             "estimated_cost_usd":        round(self.estimated_cost_usd or 0.0, 6),
             "pages_processed":           self.pages_processed or 0,
+            "executive_summary":         self.executive_summary or "",
+            "is_archived":               self.is_archived or False,
+            "archived_reason":           self.archived_reason or "",
+            "archived_by":               self.archived_by or "",
+            "archived_at":               self.archived_at.isoformat() if self.archived_at else None,
             "is_deleted":                self.is_deleted or False,
             "deleted_at":                self.deleted_at.isoformat() if self.deleted_at else None,
             # PRD Section 7 — deep links to exact source location using browser Text Fragments API.

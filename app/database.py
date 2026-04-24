@@ -67,6 +67,11 @@ def _apply_migrations():
         ("solicitations", "attachment_urls",             "TEXT"),
         ("solicitations", "capture_id",                  "VARCHAR(20)"),
         ("keyword_sets",  "is_active",                   "BOOLEAN DEFAULT FALSE"),
+        ("solicitations", "executive_summary",           "TEXT"),
+        ("solicitations", "is_archived",                 "BOOLEAN DEFAULT FALSE"),
+        ("solicitations", "archived_reason",             "TEXT"),
+        ("solicitations", "archived_by",                 "VARCHAR(200)"),
+        ("solicitations", "archived_at",                 "TIMESTAMP"),
     ]
 
     with engine.connect() as conn:

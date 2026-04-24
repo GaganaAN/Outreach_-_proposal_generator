@@ -281,6 +281,8 @@ Return ONLY a valid JSON object — no markdown, no explanation.
   "solicitation_number": "solicitation or RFP number, or null",
   "response_deadline": "submission deadline date/time, or null",
 
+  "executive_summary": "3-5 sentence brief: what the opportunity is, which agency issued it, the key requirement, the deadline, and whether Ivoyant is a strong fit. Focus on the most decision-relevant facts.",
+
   "keyword_matched_paragraph": "The exact paragraph(s) from the document where the search keyword '{keyword}' appears. Copy verbatim.",
 
   "past_performance_requirements": {{

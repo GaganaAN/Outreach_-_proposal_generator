@@ -356,6 +356,7 @@ class CaptureService:
         sol = Solicitation(
             source_url=source_url,
             solicitation_url=solicitation_url,
+            executive_summary=extraction.get("executive_summary") or "",
             title=extraction.get("title") or "",
             agency=extraction.get("agency") or "",
             solicitation_number=extraction.get("solicitation_number"),

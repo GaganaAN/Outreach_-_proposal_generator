@@ -107,6 +107,11 @@ class GenerateProposalRequest(BaseModel):
     llm_provider: Optional[str] = None  # groq | openai | gemini | None → default
 
 
+class ArchiveRequest(BaseModel):
+    reason: str
+    archived_by: Optional[str] = "user"
+
+
 # ── List & Stats ───────────────────────────────────────────────────────────────
 
 @router.get("/solicitations/scan-status")
@@ -176,6 +181,7 @@ async def list_solicitations(
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
     sort: Optional[str] = "deadline_asc",
+    show_archived: Optional[str] = None,
     db: Session = Depends(get_db),
     _: str = Depends(verify_admin),
 ):
@@ -184,6 +190,10 @@ async def list_solicitations(
     Does NOT include raw_rfp_text in list response (too large).
     """
     query = db.query(Solicitation).filter(Solicitation.is_deleted != True)
+    if show_archived == "true":
+        query = query.filter(Solicitation.is_archived == True)
+    else:
+        query = query.filter(Solicitation.is_archived != True)
     if sol_status:
         query = query.filter(Solicitation.status == sol_status)
     if scope_level:
@@ -779,5 +789,42 @@ async def restore_solicitation(
     sol.deleted_at = None
     db.commit()
     return {"message": "Restored"}
+
+
+@router.post("/solicitations/{solicitation_id}/archive")
+async def archive_solicitation(
+    solicitation_id: int,
+    body: ArchiveRequest,
+    db: Session = Depends(get_db),
+    _: str = Depends(verify_admin),
+):
+    """Manually archive a solicitation with a reason. Stays visible via Show Archived toggle."""
+    sol = db.query(Solicitation).filter(Solicitation.id == solicitation_id).first()
+    if not sol:
+        raise HTTPException(status_code=404, detail="Solicitation not found")
+    sol.is_archived    = True
+    sol.archived_reason = body.reason.strip()
+    sol.archived_by    = body.archived_by or "user"
+    sol.archived_at    = _dt.utcnow()
+    db.commit()
+    return {"message": "Archived", "archived_reason": sol.archived_reason}
+
+
+@router.post("/solicitations/{solicitation_id}/unarchive")
+async def unarchive_solicitation(
+    solicitation_id: int,
+    db: Session = Depends(get_db),
+    _: str = Depends(verify_admin),
+):
+    """Move an archived solicitation back to the active list."""
+    sol = db.query(Solicitation).filter(Solicitation.id == solicitation_id).first()
+    if not sol:
+        raise HTTPException(status_code=404, detail="Solicitation not found")
+    sol.is_archived    = False
+    sol.archived_reason = None
+    sol.archived_by    = None
+    sol.archived_at    = None
+    db.commit()
+    return {"message": "Unarchived"}
 
 

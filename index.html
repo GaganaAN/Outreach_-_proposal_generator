@@ -92,9 +92,9 @@
             --on-lime: #f8fafc;
             --error-soft: #b91c1c;
 
-            --text: #172033;
-            --sub: #57657e;
-            --dim: #8390a6;
+            --text: #0f172a;
+            --sub: #334155;
+            --dim: #64748b;
         }
 
         html[data-theme="dark"] {
@@ -1119,6 +1119,155 @@
             animation: slideUp .22s cubic-bezier(.22, 1, .36, 1);
         }
 
+        /* ── Right-side drawer for solicitation detail ── */
+        .drawer-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.45);
+            z-index: 500;
+            display: none;
+        }
+        .drawer-backdrop.open { display: block; animation: fadeIn .15s ease; }
+
+        .drawer-panel {
+            position: fixed;
+            top: 0; right: 0; bottom: 0;
+            width: min(62vw, 860px);
+            background: var(--surface);
+            border-left: 1px solid var(--border2);
+            z-index: 501;
+            display: flex;
+            flex-direction: column;
+            transform: translateX(100%);
+            transition: transform .25s cubic-bezier(.22,1,.36,1);
+            overflow: hidden;
+        }
+        .drawer-panel.open { transform: translateX(0); }
+
+        .drawer-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 20px 24px 16px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+            background: var(--surface);
+        }
+        .drawer-header-info { flex: 1; min-width: 0; }
+        .drawer-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 24px;
+        }
+
+        /* ── Executive summary card ── */
+        .exec-summary-card {
+            background: var(--raised);
+            border: 1px solid var(--border2);
+            border-left: 3px solid var(--lime);
+            border-radius: var(--r-md);
+            padding: 14px 16px;
+            margin-bottom: 16px;
+        }
+        .exec-summary-label {
+            font-family: var(--mono);
+            font-size: .6rem;
+            text-transform: uppercase;
+            letter-spacing: .12em;
+            color: var(--lime);
+            margin-bottom: 7px;
+        }
+        .exec-summary-text {
+            font-size: 13px;
+            line-height: 1.65;
+            color: var(--text);
+        }
+
+        /* ── Solicitation table ── */
+        .sol-table-wrap { overflow-x: auto; }
+        .sol-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .sol-table th {
+            text-align: left;
+            padding: 10px 12px;
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: var(--text);
+            border-bottom: 2px solid var(--border2);
+            white-space: nowrap;
+            cursor: pointer;
+            user-select: none;
+            background: var(--surface);
+        }
+        .sol-table th:hover { color: var(--lime); }
+        .sol-table th .sort-arrow { margin-left: 4px; opacity: .45; }
+        .sol-table th.sorted .sort-arrow { opacity: 1; color: var(--lime); }
+        .sol-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+            color: var(--text);
+        }
+        /* deadline cell: keep badge on same line, don't wrap */
+        .sol-table .td-deadline {
+            white-space: nowrap;
+            min-width: 200px;
+        }
+        .sol-table tr:last-child td { border-bottom: none; }
+        .sol-table tbody tr {
+            cursor: pointer;
+            transition: background .1s;
+        }
+        .sol-table tbody tr:hover { background: var(--raised); }
+
+        /* ── Match badge (score + level) ── */
+        .match-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .match-score-num {
+            font-family: var(--mono);
+            font-size: 10px;
+            opacity: .8;
+        }
+
+        /* ── Light-theme fixes for hardcoded dark colours ── */
+        html[data-theme="light"] .exec-summary-card {
+            background: #f0f5e8;
+        }
+        html[data-theme="light"] .capture-section[data-type="mandatory"] {
+            background: #fff0f0 !important;
+            border-color: #fca5a5 !important;
+        }
+        html[data-theme="light"] .capture-section[data-type="mandatory"] .capture-section-label {
+            color: #dc2626 !important;
+        }
+        html[data-theme="light"] #scan-progress-overlay > div {
+            background: var(--surface) !important;
+            border-color: var(--border2) !important;
+        }
+        html[data-theme="light"] #cd-gen-proposal-btn {
+            background: #dbeafe !important;
+            border-color: var(--blue) !important;
+            color: var(--blue) !important;
+        }
+        html[data-theme="light"] input[type="date"] {
+            color-scheme: light;
+        }
+        html[data-theme="light"] .sol-table th { background: var(--raised); }
+
         .modal-header {
             padding: 24px 28px 0;
             display: flex;
@@ -1563,6 +1712,9 @@
             </button>
             <button class="nav-item" id="nav-analytics" onclick="showPage('analytics')">
                 <span class="ni">⚡</span> Analytics
+            </button>
+            <button class="nav-item" onclick="openBinView()" title="Deleted solicitations — auto-purged after 7 days" style="color:var(--sub);">
+                <span class="ni">🗑</span> Bin
             </button>
         </div>
 
@@ -2217,11 +2369,11 @@
                         <span style="font-size:12px;color:var(--sub);white-space:nowrap;">Captured:</span>
                         <input id="capture-date-from" type="date" onchange="loadCaptureSolicitations()"
                             title="From date"
-                            style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--fg);font-size:13px;color-scheme:dark;width:150px;min-width:150px;" />
+                            style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--fg);font-size:13px;color-scheme:inherit;width:150px;min-width:150px;" />
                         <span style="font-size:12px;color:var(--sub);">–</span>
                         <input id="capture-date-to" type="date" onchange="loadCaptureSolicitations()"
                             title="To date"
-                            style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--fg);font-size:13px;color-scheme:dark;width:150px;min-width:150px;" />
+                            style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--fg);font-size:13px;color-scheme:inherit;width:150px;min-width:150px;" />
                         <button onclick="setCaptureFilterToday()" class="btn btn-ghost" style="font-size:12px;padding:6px 11px;white-space:nowrap;">📅 Today</button>
                         <button id="capture-date-clear" onclick="clearCaptureDateFilter()" class="btn btn-ghost"
                             style="font-size:12px;padding:6px 11px;color:#ef4444;display:none;">✕ Clear</button>
@@ -2232,10 +2384,11 @@
                         class="btn btn-ghost"
                         style="padding:6px 12px;font-size:12px;color:var(--amber);border-color:var(--amber);"
                         title="Test mode: show only today's records">🧪 Test</button>
-                    <!-- Bin -->
-                    <button onclick="openBinView()" class="btn btn-ghost"
-                        style="padding:6px 12px;font-size:12px;color:var(--sub);"
-                        title="View deleted solicitations (7-day bin)">🗑 Bin</button>
+                    <!-- Archived toggle -->
+                    <button id="show-archived-btn" onclick="toggleShowArchived()"
+                        class="btn btn-ghost"
+                        style="padding:6px 12px;font-size:12px;color:var(--amber);border-color:var(--amber);"
+                        title="Show/hide archived solicitations">📦 Archived</button>
                     <!-- View toggle -->
                     <div style="display:flex;gap:4px;margin-left:auto;">
                         <button id="view-btn-list" onclick="setCaptureView('list')"
@@ -2303,27 +2456,42 @@
             </div>
         </div>
 
-        <!-- ══ CAPTURE: Solicitation Detail Modal ════════════════════ -->
-        <div class="overlay" id="capture-detail-overlay" style="display:none;"
-            onclick="if(event.target===this)closeCaptureDetail()">
-            <div class="modal" style="max-width:1020px;max-height:92vh;overflow-y:auto;padding:32px;">
-                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;gap:16px;">
-                    <div>
-                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
-                            <h3 id="cd-title" style="font-family:var(--serif);font-size:1.4rem;margin:0;"></h3>
-                            <span id="cd-capture-id" style="font-family:monospace;font-size:12px;font-weight:700;color:#a855f7;background:#a855f722;border:1px solid #a855f7;padding:2px 8px;border-radius:4px;white-space:nowrap;"></span>
-                        </div>
-                        <div style="color:var(--sub);font-size:13px;">
-                            <span id="cd-agency"></span> &nbsp;·&nbsp;
-                            <span id="cd-number"></span> &nbsp;·&nbsp;
-                            Deadline: <strong id="cd-deadline"></strong> <span id="cd-expiry-badge"></span>
-                        </div>
-                    </div>
-                    <button onclick="closeCaptureDetail()" style="background:none;border:none;color:var(--sub);font-size:20px;cursor:pointer;flex-shrink:0;">✕</button>
-                </div>
+        <!-- ══ CAPTURE: Solicitation Detail — right-side drawer ════════ -->
+        <div class="drawer-backdrop" id="capture-detail-backdrop" onclick="closeCaptureDetail()"></div>
+        <div class="drawer-panel" id="capture-detail-overlay">
 
-                <!-- Scope match badge -->
-                <div id="cd-scope-badge" style="display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:20px;margin-bottom:20px;font-size:13px;font-weight:600;"></div>
+            <!-- Drawer header -->
+            <div class="drawer-header">
+                <div class="drawer-header-info">
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
+                        <span id="cd-scope-badge" style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;"></span>
+                        <span id="cd-capture-id" style="font-family:monospace;font-size:11px;font-weight:700;color:#a855f7;background:#a855f722;border:1px solid #a855f7;padding:2px 8px;border-radius:4px;white-space:nowrap;"></span>
+                        <span id="cd-expiry-badge"></span>
+                    </div>
+                    <h3 id="cd-title" style="font-family:var(--serif);font-size:1.2rem;font-style:italic;margin:0 0 4px;line-height:1.3;"></h3>
+                    <div style="color:var(--sub);font-size:12px;">
+                        <span id="cd-agency"></span>
+                        <span id="cd-number-wrap"> &nbsp;·&nbsp; <span id="cd-number"></span></span>
+                        &nbsp;·&nbsp; Deadline: <strong id="cd-deadline"></strong>
+                    </div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
+                    <button onclick="closeCaptureDetail()" style="background:none;border:none;color:var(--sub);font-size:20px;cursor:pointer;line-height:1;">✕</button>
+                    <a id="cd-source-link-hdr" href="#" target="_blank"
+                        style="display:none;font-size:11px;color:var(--sub);padding:3px 8px;border:1px solid var(--border2);border-radius:5px;text-decoration:none;white-space:nowrap;">
+                        ↗ Source
+                    </a>
+                </div>
+            </div>
+
+            <!-- Drawer body -->
+            <div class="drawer-body" id="cd-drawer-body">
+
+                <!-- Executive summary (AI brief) -->
+                <div class="exec-summary-card" id="cd-exec-summary-card" style="display:none;">
+                    <div class="exec-summary-label">📌 AI Brief</div>
+                    <div class="exec-summary-text" id="cd-exec-summary"></div>
+                </div>
 
                 <!-- Keyword match -->
                 <div class="capture-section" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;">
@@ -2371,9 +2539,9 @@
                 </div>
 
                 <!-- Mandatory / disqualifying -->
-                <div class="capture-section" style="background:#1a0c0c;border:1px solid #7f1d1d;border-radius:10px;padding:16px;margin-bottom:14px;">
+                <div class="capture-section" data-type="mandatory" style="background:var(--bg);border:1px solid #7f1d1d;border-radius:10px;padding:16px;margin-bottom:14px;">
                     <div class="capture-section-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#ef4444;margin-bottom:8px;">⚠ Mandatory / Disqualifying Requirements</div>
-                    <div id="cd-mandatory" style="font-size:13px;line-height:1.6;color:#fca5a5;"></div>
+                    <div id="cd-mandatory" style="font-size:13px;line-height:1.6;color:var(--red);"></div>
                 </div>
 
                 <!-- Scope match -->
@@ -2395,7 +2563,7 @@
                 </div>
 
                 <!-- Evaluation matrix -->
-                <div class="capture-section" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:20px;">
+                <div class="capture-section" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;">
                     <div class="capture-section-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#4f8eff;margin-bottom:8px;">Evaluation Matrix</div>
                     <div id="cd-eval" style="font-size:13px;line-height:1.6;"></div>
                 </div>
@@ -2412,23 +2580,19 @@
                 <!-- Documents & Source Links -->
                 <div class="capture-section" id="cd-documents-section" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;">
                     <div class="capture-section-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#10b981;margin-bottom:10px;">📎 Documents & Source</div>
-                    <!-- Source link — always shown -->
                     <div id="cd-source-row" style="margin-bottom:8px;display:none;">
                         <a id="cd-source-link" href="#" target="_blank"
                             style="color:var(--accent);font-size:13px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--accent);border-radius:6px;">
                             🔗 View Solicitation on HigherGov ↗
                         </a>
                     </div>
-                    <!-- Agency original source (SAM.gov etc.) -->
                     <div id="cd-agency-source-row" style="margin-bottom:8px;display:none;">
                         <a id="cd-agency-source-link" href="#" target="_blank"
                             style="color:#60a5fa;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid #60a5fa55;border-radius:6px;">
                             🏛 View on Agency Source (SAM.gov) ↗
                         </a>
                     </div>
-                    <!-- Attached PDFs -->
                     <div id="cd-attachments" style="font-size:13px;line-height:1.8;"></div>
-                    <!-- Empty state -->
                     <div id="cd-no-docs" style="font-size:13px;color:var(--sub);display:none;">No PDF attachments found — view the solicitation source page for documents.</div>
                 </div>
 
@@ -2443,7 +2607,7 @@
                 </div>
 
                 <!-- Bid/No-Bid actions -->
-                <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;">
+                <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;">
                     <div style="font-size:12px;font-weight:600;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;">Decision</div>
                     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;">
                         <div style="flex:1;min-width:200px;">
@@ -2460,13 +2624,34 @@
                         <div style="display:flex;flex-direction:column;gap:8px;">
                             <button class="btn btn-lime" onclick="saveCaptureDecision()" id="cd-save-btn">Save Decision</button>
                             <button class="btn" id="cd-gen-proposal-btn" onclick="generateCaptureProposal()"
-                                style="background:#1e3a5f;border:1px solid #4f8eff;color:#4f8eff;display:none;">
+                                style="background:var(--blue-dim);border:1px solid var(--blue);color:var(--blue);display:none;">
                                 Generate Proposal
+                            </button>
+                            <button class="btn btn-ghost" id="cd-archive-btn" onclick="openArchiveModal()"
+                                style="font-size:12px;color:var(--amber);border-color:var(--amber);">
+                                📦 Archive
                             </button>
                         </div>
                     </div>
                     <div id="cd-action-msg" style="margin-top:10px;font-size:13px;display:none;"></div>
                 </div>
+
+            </div><!-- /drawer-body -->
+        </div><!-- /drawer-panel -->
+
+        <!-- ══ Archive Reason Modal ════════════════════════════════════ -->
+        <div class="overlay" id="archive-modal" style="display:none;z-index:600;"
+            onclick="if(event.target===this)closeArchiveModal()">
+            <div class="modal" style="max-width:440px;padding:28px;">
+                <h3 style="margin-bottom:6px;font-family:var(--serif);font-style:italic;">Archive Solicitation</h3>
+                <p style="font-size:13px;color:var(--sub);margin-bottom:16px;">Archived items are hidden from the main list but stay accessible via "Show Archived". Provide a reason so you can refer back later.</p>
+                <textarea id="archive-reason-input" rows="3" placeholder="Why are you archiving this? (e.g. out of scope, budget mismatch, already pursuing via another channel…)"
+                    style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:10px;color:var(--fg);font-size:13px;resize:vertical;box-sizing:border-box;margin-bottom:14px;"></textarea>
+                <div style="display:flex;gap:10px;justify-content:flex-end;">
+                    <button onclick="closeArchiveModal()" class="btn btn-ghost">Cancel</button>
+                    <button onclick="submitArchive()" class="btn" style="background:var(--amber);color:#000;border:none;font-weight:600;">Archive</button>
+                </div>
+                <div id="archive-modal-msg" style="margin-top:10px;font-size:13px;display:none;"></div>
             </div>
         </div>
 
@@ -2490,7 +2675,7 @@
         <!-- ══ CAPTURE: Scan Progress — bottom-right mini card ════════ -->
         <div id="scan-progress-overlay"
             style="display:none;position:fixed;bottom:28px;right:28px;z-index:9000;width:340px;">
-            <div style="background:#141a28;border:1px solid var(--border2);border-radius:14px;padding:18px 20px;box-shadow:0 12px 40px rgba(0,0,0,0.85);backdrop-filter:none;">
+            <div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:18px 20px;box-shadow:0 12px 40px rgba(0,0,0,0.45);backdrop-filter:none;">
                 <!-- Header row: spinner/icon + title + close -->
                 <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
                     <div id="scan-indicator" style="flex-shrink:0;"></div>
@@ -4283,6 +4468,18 @@
             loadCaptureSolicitations();
         }
 
+        let _showArchived = false;
+
+        function toggleShowArchived() {
+            _showArchived = !_showArchived;
+            const btn = document.getElementById('show-archived-btn');
+            if (btn) {
+                btn.style.background = _showArchived ? 'rgba(240,160,48,.15)' : '';
+                btn.textContent = _showArchived ? '📦 Archived ✓' : '📦 Archived';
+            }
+            loadCaptureSolicitations();
+        }
+
         /* ── Load solicitation list ──────────────────────────────────── */
         async function loadCaptureSolicitations() {
             const statusFilter = document.getElementById('capture-filter-status').value;
@@ -4292,20 +4489,20 @@
             const dateFrom     = document.getElementById('capture-date-from')?.value || '';
             const dateTo       = document.getElementById('capture-date-to')?.value || '';
 
-            let path = '/solicitations/?limit=50';
+            let path = '/solicitations/?limit=100';
             if (statusFilter) path += '&sol_status='  + encodeURIComponent(statusFilter);
             if (scopeFilter)  path += '&scope_level=' + encodeURIComponent(scopeFilter);
             if (sortOrder)    path += '&sort='        + encodeURIComponent(sortOrder);
             if (searchVal)    path += '&search='      + encodeURIComponent(searchVal);
             if (dateFrom)     path += '&date_from='   + encodeURIComponent(dateFrom);
             if (dateTo)       path += '&date_to='     + encodeURIComponent(dateTo);
+            if (_showArchived) path += '&show_archived=true';
 
             // Show/hide the clear-date button
             const clearBtn = document.getElementById('capture-date-clear');
             if (clearBtn) clearBtn.style.display = (dateFrom || dateTo) ? 'inline-block' : 'none';
 
             const container = document.getElementById('capture-list');
-            // Show cached data immediately if available, fetch fresh in background
             const hasCached = Object.keys(_solicitationsCache).length > 0;
             if (!hasCached) container.innerHTML = '<p style="color:var(--sub);">Loading…</p>';
             if (_captureLoadPending) return;
@@ -4313,10 +4510,9 @@
             try {
                 const res = await adminFetch('GET', path);
                 const sols = res.solicitations || [];
-                // Populate cache with full solicitation objects
                 sols.forEach(s => { _solicitationsCache[s.id] = s; });
                 if (!sols.length) {
-                    container.innerHTML = `<p style="color:var(--sub);padding:20px 0;">No solicitations found. Add a procurement source in Lead Discovery or click <strong>Scan Now</strong>.</p>`;
+                    container.innerHTML = `<p style="color:var(--sub);padding:20px 0;">No solicitations found${_showArchived ? ' in archived' : ''}. ${_showArchived ? '' : 'Add a procurement source in Lead Discovery or click <strong>Scan Now</strong>.'}</p>`;
                     return;
                 }
 
@@ -4327,47 +4523,98 @@
                     return;
                 }
 
-                {
-                    // ── List view ──
-                    container.style.display = 'block';
-                    container.style.gridTemplateColumns = '';
-                    container.style.gap = '';
-                    container.innerHTML = sols.map(s => {
-                        const st = scopeStyle(s.scope_match_level);
-                        const statusColors = { new:'#4f8eff', reviewing:'#f0a030', bid:'#10b981', no_bid:'#ef4444', proposal_generated:'#a855f7' };
-                        const sc = statusColors[s.status] || '#9ca3af';
-                        const capturedOn = s.created_at ? new Date(s.created_at).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true}) : '';
-                        return `
-                        <div class="card" style="margin-bottom:20px;border-left:3px solid ${st.border};cursor:pointer;"
-                            onclick="openCaptureDetail(${s.id})">
-                            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;">
-                                <div style="flex:1;min-width:0;">
-                                    <div style="font-weight:600;font-size:14px;margin-bottom:5px;line-height:1.4;">
-                                        ${s.title || '(No title)'}
-                                    </div>
-                                    <div style="font-size:12px;color:var(--sub);">
-                                        <span style="font-family:monospace;font-size:11px;color:#a855f7;font-weight:600;">${s.capture_id || ''}</span>
-                                        &nbsp;·&nbsp; ${s.agency || ''} &nbsp;·&nbsp; Keyword: <em>${s.keyword_matched || ''}</em>
-                                        ${s.response_deadline ? ` &nbsp;·&nbsp; Deadline: <strong>${s.response_deadline}</strong> ${expiryBadge(s.response_deadline)}` : ''}
-                                        ${capturedOn ? ` &nbsp;·&nbsp; Captured: ${capturedOn}` : ''}
-                                    </div>
-                                </div>
-                                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
-                                    <span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;background:${st.bg};border:1px solid ${st.border};color:${st.color};">
-                                        ${s.scope_match_level || 'Low'}
-                                    </span>
-                                    <span style="padding:2px 8px;border-radius:10px;font-size:11px;background:${sc}22;border:1px solid ${sc};color:${sc};">
-                                        ${s.status.replace('_',' ')}
-                                    </span>
-                                    <button onclick="event.stopPropagation();deleteSolicitation(${s.id})"
-                                        title="Move to bin"
-                                        style="background:transparent;border:none;cursor:pointer;color:#ef444466;font-size:13px;padding:2px 4px;border-radius:4px;"
-                                        onmouseenter="this.style.color='#ef4444'" onmouseleave="this.style.color='#ef444466'">🗑</button>
-                                </div>
-                            </div>
-                        </div>`;
-                    }).join('');
+                // ── Table view (replaces old list/card list) ──
+                container.style.display = 'block';
+                container.style.gridTemplateColumns = '';
+                container.style.gap = '';
+                const statusColors = { new:'#4f8eff', reviewing:'#f0a030', bid:'#10b981', no_bid:'#ef4444', proposal_generated:'#a855f7' };
+
+                // Normalise deadline to "Mon DD, YYYY" — strips time & timezone so all rows align
+                function fmtDeadline(raw) {
+                    if (!raw) return '—';
+                    // ISO datetime: 2026-04-24T09:00:00-04:00 → take date part only
+                    const isoMatch = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+                    if (isoMatch) {
+                        const [y, m, d] = isoMatch[1].split('-').map(Number);
+                        return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    }
+                    // "April 24, 2026, 9:00 a.m. EDT" → strip everything after second comma
+                    const parts = raw.split(',');
+                    if (parts.length >= 2) {
+                        const candidate = (parts[0] + ',' + parts[1]).trim();
+                        // validate it looks like a date (has a 4-digit year)
+                        if (/\d{4}/.test(candidate)) return candidate;
+                    }
+                    return raw;
                 }
+
+                const rows = sols.map(s => {
+                    const st  = scopeStyle(s.scope_match_level);
+                    const sc  = statusColors[s.status] || '#9ca3af';
+                    const pct = s.scope_match_percentage ? Math.round(s.scope_match_percentage) : 0;
+                    const rawDl = s.response_deadline || '';
+                    const dlDisplay = fmtDeadline(rawDl);
+                    const archCol = s.archived_reason
+                        ? `<span style="font-size:11px;color:var(--amber);max-width:140px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${s.archived_reason}">📦 ${s.archived_reason}</span>`
+                        : '';
+                    return `<tr onclick="openCaptureDetail(${s.id})" title="Click to open detail">
+                        <td style="max-width:320px;">
+                            <div style="font-weight:500;font-size:13px;line-height:1.4;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(s.title||'').replace(/"/g,'&quot;')}">${s.title || '(No title)'}</div>
+                            <div style="font-size:11px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.agency || ''}</div>
+                        </td>
+                        <td class="td-deadline">
+                            ${dlDisplay !== '—'
+                                ? `<span style="font-size:12px;display:inline-block;min-width:100px;">${dlDisplay}</span>&nbsp;${expiryBadge(rawDl)}`
+                                : '<span style="color:var(--sub);">—</span>'}
+                        </td>
+                        <td style="white-space:nowrap;">
+                            <span class="match-badge" style="background:${st.bg};border:1px solid ${st.border};color:${st.color};">
+                                ${s.scope_match_level || 'Low'}
+                                <span class="match-score-num">${pct}%</span>
+                            </span>
+                        </td>
+                        <td>
+                            <span style="padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600;background:${sc};color:#fff;white-space:nowrap;display:inline-block;">
+                                ${s.status.replace(/_/g,' ')}
+                            </span>
+                        </td>
+                        <td>${archCol}</td>
+                        <td onclick="event.stopPropagation()" style="width:44px;text-align:center;">
+                            <button onclick="deleteSolicitation(${s.id})"
+                                title="Move to bin"
+                                style="background:none;border:none;cursor:pointer;padding:2px;line-height:0;border-radius:50%;transition:transform .15s,opacity .15s;opacity:.82;"
+                                onmouseenter="this.style.opacity='1';this.style.transform='scale(1.12)'" onmouseleave="this.style.opacity='.82';this.style.transform='scale(1)'">
+                                <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <circle cx="15" cy="15" r="15" fill="#ef4444"/>
+                                  <rect x="12.5" y="9" width="5" height="2" rx="1" fill="white"/>
+                                  <rect x="9.5" y="11.5" width="11" height="1.8" rx="0.9" fill="white"/>
+                                  <path d="M11.2 14h7.6l-.65 7.5H11.85L11.2 14z" fill="white"/>
+                                  <line x1="13.5" y1="15.5" x2="13.7" y2="20" stroke="#ef4444" stroke-width="1.1" stroke-linecap="round"/>
+                                  <line x1="15" y1="15.5" x2="15" y2="20" stroke="#ef4444" stroke-width="1.1" stroke-linecap="round"/>
+                                  <line x1="16.5" y1="15.5" x2="16.3" y2="20" stroke="#ef4444" stroke-width="1.1" stroke-linecap="round"/>
+                                </svg>
+                            </button>
+                        </td>
+                    </tr>`;
+                }).join('');
+
+                container.innerHTML = `
+                <div class="sol-table-wrap">
+                    <table class="sol-table">
+                        <thead>
+                            <tr>
+                                <th>Title / Agency</th>
+                                <th>Deadline</th>
+                                <th>Match</th>
+                                <th>Status</th>
+                                <th>Archive Reason</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>`;
+
             } catch (e) {
                 container.innerHTML = `<p style="color:#ef4444;">Error: ${e.message}</p>`;
             } finally {
@@ -4403,7 +4650,7 @@
                             ? '<ul style="margin:4px 0 0 16px;padding:0;">' + v.map(i => `<li>${i}</li>`).join('') + '</ul>'
                             : '<span style="color:var(--sub);">None</span>';
                     } else if (typeof v === 'boolean') {
-                        display = v ? '<span style="color:#86efac;">Yes</span>' : '<span style="color:#f87171;">No</span>';
+                        display = v ? '<span style="color:var(--green);font-weight:600;">Yes</span>' : '<span style="color:var(--red);font-weight:600;">No</span>';
                     } else {
                         display = `<span>${v}</span>`;
                     }
@@ -4431,14 +4678,16 @@
             return String(val);
         }
 
-        /* ── Open detail modal ───────────────────────────────────────── */
+        /* ── Open detail drawer ─────────────────────────────────────── */
         async function openCaptureDetail(id) {
             _currentSolicitationId = id;
-            const overlay = document.getElementById('capture-detail-overlay');
-            overlay.style.display = 'flex';
+            const backdrop = document.getElementById('capture-detail-backdrop');
+            const panel    = document.getElementById('capture-detail-overlay');
+            backdrop.classList.add('open');
+            panel.classList.add('open');
+            document.body.style.overflow = 'hidden';
             document.getElementById('cd-action-msg').style.display = 'none';
 
-            // Use cached data for instant render; only fetch if not cached
             const cached = _solicitationsCache[id];
             if (!cached) {
                 document.getElementById('cd-title').textContent = 'Loading…';
@@ -4455,13 +4704,38 @@
                 const captureIdEl = document.getElementById('cd-capture-id');
                 if (captureIdEl) captureIdEl.textContent = s.capture_id || '';
 
-                // Scope badge
-                const st = scopeStyle(s.scope_match_level);
+                // Scope badge (level + score %)
+                const st  = scopeStyle(s.scope_match_level);
+                const pct = s.scope_match_percentage ? Math.round(s.scope_match_percentage) : 0;
                 const badge = document.getElementById('cd-scope-badge');
                 badge.style.background = st.bg;
                 badge.style.border     = `1px solid ${st.border}`;
                 badge.style.color      = st.color;
-                badge.textContent      = `${s.scope_match_level || 'Low'} Match`;
+                badge.innerHTML = `${s.scope_match_level || 'Low'} Match <span style="font-family:var(--mono);font-size:11px;opacity:.75;">${pct}%</span>`;
+
+                // Executive summary
+                const summaryCard = document.getElementById('cd-exec-summary-card');
+                const summaryText = document.getElementById('cd-exec-summary');
+                if (s.executive_summary) {
+                    summaryText.textContent = s.executive_summary;
+                    summaryCard.style.display = 'block';
+                } else {
+                    summaryCard.style.display = 'none';
+                }
+
+                // Archive button label
+                const archBtn = document.getElementById('cd-archive-btn');
+                if (archBtn) {
+                    archBtn.textContent = s.is_archived ? '📦 Unarchive' : '📦 Archive';
+                    archBtn.onclick = s.is_archived ? unarchiveCurrent : openArchiveModal;
+                }
+
+                // Header source link
+                const hdrLink = document.getElementById('cd-source-link-hdr');
+                if (hdrLink) {
+                    if (s.solicitation_url) { hdrLink.href = s.solicitation_url; hdrLink.style.display = 'inline-block'; }
+                    else { hdrLink.style.display = 'none'; }
+                }
 
                 // Source link
                 const sourceRow = document.getElementById('cd-source-row');
@@ -4487,7 +4761,7 @@
                     document.getElementById('cd-mandatory').innerHTML =
                         '<ul style="margin:0;padding-left:18px;">' + mandatory.map(m => `<li>${m}</li>`).join('') + '</ul>';
                 } else {
-                    document.getElementById('cd-mandatory').innerHTML = '<span style="color:#86efac;">No disqualifying requirements found</span>';
+                    document.getElementById('cd-mandatory').innerHTML = '<span style="color:var(--green);font-weight:500;">✓ No disqualifying requirements found</span>';
                 }
 
                 document.getElementById('cd-scope-summary').innerHTML = s.scope_match_summary
@@ -4582,7 +4856,9 @@
         }
 
         function closeCaptureDetail() {
-            document.getElementById('capture-detail-overlay').style.display = 'none';
+            document.getElementById('capture-detail-backdrop').classList.remove('open');
+            document.getElementById('capture-detail-overlay').classList.remove('open');
+            document.body.style.overflow = '';
             _currentSolicitationId = null;
             loadCaptureSolicitations();
             loadCaptureStats();
@@ -4647,6 +4923,46 @@
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Save Decision';
+            }
+        }
+
+        /* ── Archive / unarchive ─────────────────────────────────────── */
+        function openArchiveModal() {
+            document.getElementById('archive-reason-input').value = '';
+            document.getElementById('archive-modal-msg').style.display = 'none';
+            document.getElementById('archive-modal').style.display = 'flex';
+        }
+        function closeArchiveModal() {
+            document.getElementById('archive-modal').style.display = 'none';
+        }
+        async function submitArchive() {
+            const reason = document.getElementById('archive-reason-input').value.trim();
+            const msg    = document.getElementById('archive-modal-msg');
+            if (!reason) {
+                msg.style.display = 'block'; msg.style.color = '#ef4444';
+                msg.textContent = 'Please enter a reason before archiving.';
+                return;
+            }
+            try {
+                await adminFetch('POST', `/solicitations/${_currentSolicitationId}/archive`, { reason, archived_by: 'user' });
+                closeArchiveModal();
+                delete _solicitationsCache[_currentSolicitationId];
+                toast('Solicitation archived', 'success');
+                closeCaptureDetail();
+            } catch (e) {
+                msg.style.display = 'block'; msg.style.color = '#ef4444';
+                msg.textContent = 'Error: ' + e.message;
+            }
+        }
+        async function unarchiveCurrent() {
+            if (!_currentSolicitationId) return;
+            try {
+                await adminFetch('POST', `/solicitations/${_currentSolicitationId}/unarchive`);
+                delete _solicitationsCache[_currentSolicitationId];
+                toast('Solicitation moved back to active list', 'success');
+                closeCaptureDetail();
+            } catch (e) {
+                toast('Unarchive failed: ' + e.message, 'error');
             }
         }
 
